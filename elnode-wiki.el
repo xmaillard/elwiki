@@ -47,26 +47,18 @@
 (require 'db)
 (eval-when-compile 'fakir)
 (require 'creole nil 't)
-;;(require 'vc)
 
 (defgroup elnode-wikiserver nil
   "A Wiki server written with Elnode."
   :group 'elnode)
 
 ;;;###autoload
-(defconst elnode-wikiserver-wikiroot-default
-  (expand-file-name (concat elnode-config-directory "wiki/"))
-  "The default location of the wiki root.
-
-This is used to detect whether elnode needs to create this
-directory or not.")
-
-;;;###autoload
 (defcustom elnode-wikiserver-wikiroot
-  elnode-wikiserver-wikiroot-default
+  "/tmp/elnode-wiki/"
   "The root for the Elnode wiki files.
 
-This is where elnode-wikiserver serves wiki files from."
+This is where elnode-wikiserver serves wiki files from.  You
+should change this."
   :type '(directory)
   :group 'elnode-wikiserver)
 
@@ -102,55 +94,6 @@ This is where elnode-wikiserver serves wiki files from."
   :type '(string)
   :group 'elnode-wikiserver)
 
-(defun elnode-wiki--setup ()
-  "Setup the wiki."
-  (elnode--dir-setup elnode-wikiserver-wikiroot
-                     elnode-wikiserver-wikiroot-default
-                     "default-wiki-index.creole"
-                     "index.creole"))
-
-(ert-deftest elnode-wiki--setup ()
-  "Test the wiki setup function."
-  ;; Test that it's not called if we can't find the source file
-  (let (called)
-    (flet ((make-directory (dirname &optional parents)
-             (setq called t))
-           ;; We fake buffer-file-name so that the wiki-index-source
-           ;; will not be found
-           (buffer-file-name ()
-             "/tmp/elnode/elnode-wiki.el"))
-      (elnode-wiki--setup)
-      (should-not called)))
-  ;; Test that when called we're going to copy things right
-  (let (make-dir
-        copy-file
-        ;; Ensure the configurable wikiroot is set to the default
-        (elnode-wikiserver-wikiroot elnode-wikiserver-wikiroot-default))
-    (flet ((make-directory (dirname &optional parents)
-             (setq make-dir (list dirname parents)))
-           (dired-copy-file (from to ok-flag)
-             (setq copy-file (list from to ok-flag)))
-           ;; Mock the source filename environment
-           (buffer-file-name ()
-             "/tmp/elnode--wiki-setup-test/elnode-wiki.el")
-           (file-exists-p (filename)
-             (equal
-              filename
-              "/tmp/elnode--wiki-setup-test/default-wiki-index.creole")))
-      (elnode-wiki--setup)
-      (should
-       (equal
-        (list
-         ;; This is the dir we should make
-         '("/home/nferrier/.emacs.d/elnode/wiki/" t)
-         ;; This is the copy file spec
-         '("/tmp/elnode--wiki-setup-test/default-wiki-index.creole"
-           "/home/nferrier/.emacs.d/elnode/wiki/index.creole"
-           nil))
-        ;; So this is the directory that make-directory will create
-        ;; and the copy-file spec
-        (list make-dir copy-file))))))
-
 (defun elnode--wiki-call (out-buf page-text page)
   "Call a wiki page sending output OUT-BUF.
 
@@ -181,75 +124,8 @@ The page is faked with PAGE-TEXT."
         :body-header header
         :body-footer footer)))))
 
-;; Deprecated
-(defun elnode-wiki-send (httpcon wikipage &optional pageinfo)
-  "Sends the WIKIPAGE to the HTTPCON.
-
-If PAGEINFO is specified it's the HTTP path to the Wiki page.
-
-Uses Elnode's worker elisp stuff which is now deprecated."
-  (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
-  (let ((page (or pageinfo (elnode-http-pathinfo httpcon))))
-    (elnode-worker-elisp
-        httpcon
-        ((target wikipage)
-         (page-info page)
-         (header elnode-wikiserver-body-header)
-         (footer elnode-wikiserver-body-footer))
-      (require 'creole)
-      (creole-wiki
-       target
-       :destination t
-       :variables `((page . ,page-info))
-       :body-header header
-       :body-footer footer))))
-
-(define-obsolete-function-alias
-    'elnode-wiki-send
-    'elnode-wiki-page
-  "24.1"
-  "The worker elisp code that this depends on is deprecated in
-  favour of Enode RLE.")
-
-(defvar elnode-wiki-page-use-rle nil
-  "Whether to use RLE for this wiki or not.
-
-The RLE stuff is not really stable yet so this is a switch that
-let's developers play with but does not affect use.")
-
-(defun elnode-wiki-page-rle (httpcon wikipage &optional pageinfo)
-  "Creole render the  WIKIPAGE to the HTTPCON.
-
-If PAGEINFO is specified it's the HTTP path to the Wiki page.
-
-This version uses RLE which renders the Wiki page in a child
-Emacs."
-  (let ((authenticated (elnode-http-cookie httpcon "elnodeauth")))
-    (let ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
-          (header elnode-wikiserver-body-header)
-          (footer (if authenticated
-                      elnode-wikiserver-body-footer
-                      elnode-wikiserver-body-footer-not-loggedin)))
-      (elnode-async-do
-       httpcon
-       requires (creole elnode)
-       with-environment ((target wikipage)
-                         (page-info page-info)
-                         (header header)
-                         (footer footer))
-       do
-       (creole-wiki
-        target
-        :destination t
-        :variables `((page . ,page-info))
-        :body-header header
-        :body-footer footer)))))
-
 (defun elnode-wiki-page (httpcon wikipage &optional pageinfo)
   "Creole render a WIKIPAGE back to the HTTPCON."
-  (if elnode-wiki-page-use-rle
-      (elnode-wiki-page-rle httpcon wikipage pageinfo)
-      ;; Otherwise just do it
       (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
       (with-stdout-to-elnode httpcon
           (let ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
@@ -262,7 +138,7 @@ Emacs."
              :destination t
              :variables (list (cons 'page page-info))
              :body-header header
-             :body-footer footer)))))
+             :body-footer footer))))
 
 (defun elnode-wiki--text-param (httpcon)
   "Get the text param from HTTPCON and convert it."
@@ -308,9 +184,9 @@ Update operations are protected by authentication."
        with target-path
        on httpcon
        do
-       (if (equal target-path (expand-file-name (concat wikiroot "/")))
+       (if (equal (file-name-as-directory target-path) (file-name-as-directory (concat wikiroot "/")))
            (elnode-wiki-page httpcon (concat wikiroot "/index.creole"))
-           (elnode-wiki-page httpcon target-path))))
+         (elnode-wiki-page httpcon target-path))))
     (POST
      (with-elnode-auth httpcon 'elnode-wiki-auth
        (let* ((path (elnode-http-pathinfo httpcon))
@@ -340,7 +216,6 @@ The Wiki server is only available if the `creole' package is
 provided. Otherwise it will just error."
   (if (not (elnode-wikiserver-test))
       (elnode-send-500 httpcon "The Emacs feature 'creole is required.")
-      (elnode-wiki--setup)
       (elnode-wiki-handler httpcon elnode-wikiserver-wikiroot)))
 
 (defvar elnode-wiki-db
