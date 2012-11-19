@@ -44,7 +44,6 @@
 ;;; Code:
 
 (require 'elnode)
-(require 'db)
 (eval-when-compile 'fakir)
 (require 'creole nil 't)
 
@@ -69,27 +68,7 @@ should change this."
   :group 'elnode-wikiserver)
 
 (defcustom elnode-wikiserver-body-footer
-  "<div id='footer'>
-<form action='{{page}}' method='POST'>
-<fieldset>
-<legend>Edit this page</legend>
-<textarea  cols='80' rows='20' name='wikitext'>
-{{text}}
-</textarea><br/>
-<input type='text' name='comment' value=''/>
-<input type='submit' name='save' value='save'/>
-<input type='submit' name='preview' value='preview'/>
-</fieldset>
-</form>
-</div>"
-  "HTML BODY footter for a rendered Wiki page."
-  :type '(string)
-  :group 'elnode-wikiserver)
-
-(defcustom elnode-wikiserver-body-footer-not-loggedin
-  "<div id='footer'>
-    <a href='/wiki/login/?redirect={{page}}'>login to edit</a>
-  </div>"
+  "<div id='footer'></div>"
   "HTML BODY footter for a rendered Wiki page."
   :type '(string)
   :group 'elnode-wikiserver)
@@ -130,9 +109,7 @@ The page is faked with PAGE-TEXT."
       (with-stdout-to-elnode httpcon
           (let ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
                 (header elnode-wikiserver-body-header)
-                (footer (if-elnode-auth httpcon 'elnode-wiki-auth
-                          elnode-wikiserver-body-footer
-                          elnode-wikiserver-body-footer-not-loggedin)))
+                (footer elnode-wikiserver-body-footer))
             (creole-wiki
              wikipage
              :destination t
@@ -177,29 +154,29 @@ The page is faked with PAGE-TEXT."
 Send the Wiki page requested, which must be a file existing under
 the WIKIROOT, back to the HTTPCON.
 
-Update operations are protected by authentication."
+Update operations are NOT protected by authentication.  Soft
+security is used."
   (elnode-method httpcon
     (GET
      (elnode-docroot-for wikiroot
        with target-path
        on httpcon
        do
-       (if (equal (file-name-as-directory target-path) (file-name-as-directory (concat wikiroot "/")))
+       (if (equal (file-name-as-directory target-path) (file-name-as-directory wikiroot))
            (elnode-wiki-page httpcon (concat wikiroot "/index.creole"))
          (elnode-wiki-page httpcon target-path))))
     (POST
-     (with-elnode-auth httpcon 'elnode-wiki-auth
-       (let* ((path (elnode-http-pathinfo httpcon))
-              (text (elnode-wiki--text-param httpcon)))
-         (if (not (elnode-http-param httpcon "preview"))
-             ;; A save request in which case save the new text and then
-             ;; send the wiki text.
-             (elnode-wiki--save-request httpcon wikiroot path text)
-             ;; Might be a preview request in which case send back the WIKI
-             ;; text that's been sent.
-             (with-temp-file "/tmp/preview"
-               (insert text))
-             (elnode-wiki-send httpcon "/tmp/preview" path)))))))
+     (let* ((path (elnode-http-pathinfo httpcon))
+            (text (elnode-wiki--text-param httpcon)))
+       (if (not (elnode-http-param httpcon "preview"))
+           ;; A save request in which case save the new text and then
+           ;; send the wiki text.
+           (elnode-wiki--save-request httpcon wikiroot path text)
+         ;; Might be a preview request in which case send back the WIKI
+         ;; text that's been sent.
+         (with-temp-file "/tmp/preview"
+           (insert text))
+         (elnode-wiki-send httpcon "/tmp/preview" path))))))
 
 ;;;###autoload
 (defun elnode-wikiserver-test ()
@@ -217,21 +194,6 @@ provided. Otherwise it will just error."
   (if (not (elnode-wikiserver-test))
       (elnode-send-500 httpcon "The Emacs feature 'creole is required.")
       (elnode-wiki-handler httpcon elnode-wikiserver-wikiroot)))
-
-(defvar elnode-wiki-db
-  (db-make
-   `(db-hash
-     :filename
-     ,(expand-file-name
-       (concat elnode-config-directory "elnode-wiki-auth")))))
-
-;; Define the authentication scheme for the wiki
-(elnode-auth-define-scheme
- 'elnode-wiki-auth
- :auth-db elnode-wiki-db
- :redirect (elnode-auth-make-login-wrapper
-            'elnode-wikiserver
-            :target "/wiki/login/"))
 
 
 ;;; Tests
