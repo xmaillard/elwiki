@@ -73,7 +73,7 @@ should change this."
   :type '(string)
   :group 'elwiki)
 
-(defun elnode--wiki-call (out-buf page-text page)
+(defun elwiki--call (out-buf page-text page)
   "Call a wiki page sending output OUT-BUF.
 
 The page is faked with PAGE-TEXT."
