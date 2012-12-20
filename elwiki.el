@@ -148,23 +148,23 @@ The page is faked with PAGE-TEXT."
         (kill-buffer git-buf))
       (elwiki-page httpcon file-name))))
 
-(defun elwiki-handler (httpcon wikiroot)
+(defun elwiki--router (httpcon)
+  "Dispatch to a handler based on the URL."
+
+  (elnode-hostpath-dispatcher httpcon
+     `(("^[^/]+//wiki/\\(.*\\)" . elwiki--handler))))
+
+(defun elwiki--handler (httpcon)
   "A low level handler for Wiki operations.
 
 Send the Wiki page requested, which must be a file existing under
-the WIKIROOT, back to the HTTPCON.
+ELWIKI-WIKIROOT, back to the HTTPCON.
 
 Update operations are NOT protected by authentication.  Soft
 security is used."
   (elnode-method httpcon
     (GET
-     (elnode-docroot-for wikiroot
-       with target-path
-       on httpcon
-       do
-       (if (equal (file-name-as-directory target-path) (file-name-as-directory wikiroot))
-           (elwiki-page httpcon (concat wikiroot "/index.creole"))
-         (elwiki-page httpcon target-path))))
+     (elwiki-page httpcon (expand-file-name (concat elwiki-wikiroot (elnode-http-pathinfo httpcon)))))
     (POST
      (let* ((path (elnode-http-pathinfo httpcon))
             (text (elwiki--text-param httpcon)))
@@ -184,16 +184,16 @@ security is used."
   (featurep 'creole))
 
 ;;;###autoload
-(define-elnode-handler elwiki (httpcon)
-  "Serve Wiki pages from `elwiki-wikiroot'.
+(defun elwiki-server (httpcon)
+  "Serve wiki pages from `elwiki-wikiroot'.
 
 HTTPCON is the request.
 
-The Wiki server is only available if the `creole' package is
+The wiki server is only available if the `creole' package is
 provided. Otherwise it will just error."
   (if (not (elwiki-test))
       (elnode-send-500 httpcon "The Emacs feature 'creole is required.")
-      (elwiki-handler httpcon elwiki-wikiroot)))
+    (elwiki--router httpcon)))
 
 
 ;;; Tests
