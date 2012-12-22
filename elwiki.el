@@ -162,21 +162,30 @@ ELWIKI-WIKIROOT, back to the HTTPCON.
 
 Update operations are NOT protected by authentication.  Soft
 security is used."
-  (elnode-method httpcon
-    (GET
-     (elwiki-page httpcon (expand-file-name (concat elwiki-wikiroot (elnode-http-pathinfo httpcon)))))
-    (POST
-     (let* ((path (elnode-http-pathinfo httpcon))
-            (text (elwiki--text-param httpcon)))
-       (if (not (elnode-http-param httpcon "preview"))
-           ;; A save request in which case save the new text and then
-           ;; send the wiki text.
-           (elwiki--save-request httpcon wikiroot path text)
-         ;; Might be a preview request in which case send back the WIKI
-         ;; text that's been sent.
-         (with-temp-file "/tmp/preview"
-           (insert text))
-         (elwiki-send httpcon "/tmp/preview" path))))))
+  (let ((targetfile (elnode-http-mapping httpcon 1)))
+   (flet ((elnode-http-mapping (httpcon which)
+            (concat targetfile ".creole")))
+     (elnode-method httpcon
+       (GET
+        (elnode-docroot-for (concat elwiki-wikiroot "/wiki/")
+          with target-path
+          on httpcon
+          do
+          (progn
+            (message target-path)
+            (elwiki-page httpcon target-path))))
+       (POST
+        (let* ((path (elnode-http-pathinfo httpcon))
+               (text (elwiki--text-param httpcon)))
+          (if (not (elnode-http-param httpcon "preview"))
+              ;; A save request in which case save the new text and then
+              ;; send the wiki text.
+              (elwiki--save-request httpcon wikiroot path text)
+            ;; Might be a preview request in which case send back the WIKI
+            ;; text that's been sent.
+            (with-temp-file "/tmp/preview"
+              (insert text))
+            (elwiki-send httpcon "/tmp/preview" path))))))))
 
 ;;;###autoload
 (defun elwiki-test ()
