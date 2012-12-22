@@ -53,7 +53,7 @@
 
 ;;;###autoload
 (defcustom elwiki-wikiroot
-  "/tmp/elwiki/"
+  (file-name-directory (or (buffer-file-name) load-file-name))
   "The root for the Elnode wiki files.
 
 This is where elwiki serves wiki files from.  You
