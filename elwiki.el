@@ -44,8 +44,9 @@
 ;;; Code:
 
 (require 'elnode)
-(eval-when-compile 'fakir)
-(require 'creole nil 't)
+
+(elnode-app elwiki-dir
+    creole)
 
 (defgroup elwiki nil
   "A Wiki server written with Elnode."
@@ -53,7 +54,7 @@
 
 ;;;###autoload
 (defcustom elwiki-wikiroot
-  (file-name-directory (or (buffer-file-name) load-file-name))
+  elwiki-dir
   "The root for the Elnode wiki files.
 
 This is where elwiki serves wiki files from.  You
@@ -203,29 +204,6 @@ provided. Otherwise it will just error."
   (if (not (elwiki-test))
       (elnode-send-500 httpcon "The Emacs feature 'creole is required.")
     (elwiki--router httpcon)))
-
-
-;;; Tests
-
-(ert-deftest elwiki-page ()
-  "Full stack Wiki test."
-  (with-elnode-mock-server
-      ;; The dispatcher function
-      (lambda (httpcon)
-        (let ((elwiki-wikiroot "/home/elnode/wiki"))
-          (elnode-hostpath-dispatcher
-           httpcon
-           '(("[^/]*//wiki/\\(.*\\)" . elwiki))))) t
-    (fakir-mock-file (fakir-file
-                      :filename "test.creole"
-                      :directory "/home/elnode/wiki"
-                      :content "= Hello World =\nthis is a creole wiki file!\n")
-        (let* ((elnode--do-error-logging nil)
-               (elnode--do-access-logging-on-dispatch nil))
-          (should-elnode-response
-           (elnode-test-call "/wiki/test.creole")
-           :status-code 200
-           :body-match ".*<h1>Hello World</h1>.*")))))
 
 (provide 'elwiki)
 
