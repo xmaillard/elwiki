@@ -151,9 +151,11 @@ The page is faked with PAGE-TEXT."
 
 (defun elwiki--router (httpcon)
   "Dispatch to a handler based on the URL."
-
-  (elnode-hostpath-dispatcher httpcon
-     `(("^[^/]+//wiki/\\(.*\\)" . elwiki--handler))))
+  (let ((webserver (elnode-webserver-handler-maker
+                    (concat elwiki-dir "/static/"))))
+    (elnode-hostpath-dispatcher httpcon
+     `(("^[^/]*//wiki/\\(.*\\)" . elwiki--handler)
+       ("^[^/]*//static/\\(.*\\)$" . ,webserver)))))
 
 (defun elwiki--handler (httpcon)
   "A low level handler for Wiki operations.
