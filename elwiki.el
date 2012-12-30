@@ -69,7 +69,19 @@ should change this."
   :group 'elwiki)
 
 (defcustom elwiki-body-footer
-  "<div id='footer'></div>"
+  "<div id='footer'>
+<form action='{{page}}' method='POST'>
+<fieldset>
+<legend>Edit this page</legend>
+<textarea  cols='80' rows='20' name='wikitext'>
+{{text}}
+</textarea><br/>
+<input type='text' name='comment' value=''/>
+<input type='submit' name='save' value='save'/>
+<input type='submit' name='preview' value='preview'/>
+</fieldset>
+</form>
+</div>"
   "HTML BODY footter for a rendered Wiki page."
   :type '(string)
   :group 'elwiki)
