@@ -174,9 +174,7 @@ security is used."
           with target-path
           on httpcon
           do
-          (progn
-            (message target-path)
-            (elwiki-page httpcon target-path))))
+          (elwiki-page httpcon target-path)))
        (POST
         (let* ((path (elnode-http-pathinfo httpcon))
                (text (elwiki--text-param httpcon)))
