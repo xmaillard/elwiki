@@ -43,8 +43,6 @@
 
 ;;; Code:
 
-(require 'elnode)
-
 (elnode-app elwiki-dir
     creole)
 
