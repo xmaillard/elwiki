@@ -198,7 +198,7 @@ security is used."
             ;; text that's been sent.
             (with-temp-file "/tmp/preview"
               (insert text))
-            (elwiki-send httpcon "/tmp/preview" path))))))))
+            (elwiki-page httpcon "/tmp/preview" path))))))))
 
 ;;;###autoload
 (defun elwiki-test ()
