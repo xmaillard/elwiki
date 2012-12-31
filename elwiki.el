@@ -188,12 +188,12 @@ security is used."
           do
           (elwiki-page httpcon target-path)))
        (POST
-        (let* ((path (elnode-http-pathinfo httpcon))
+        (let ((path (elnode-http-pathinfo httpcon))
                (text (elwiki--text-param httpcon)))
           (if (not (elnode-http-param httpcon "preview"))
               ;; A save request in which case save the new text and then
               ;; send the wiki text.
-              (elwiki--save-request httpcon wikiroot path text)
+              (elwiki--save-request httpcon elwiki-wikiroot path text)
             ;; Might be a preview request in which case send back the WIKI
             ;; text that's been sent.
             (with-temp-file "/tmp/preview"
