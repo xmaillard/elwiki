@@ -76,7 +76,7 @@ should change this."
 <textarea  cols='80' rows='20' name='wikitext'>
 {{text}}
 </textarea><br/>
-<input type='text' name='comment' value=''/>
+<label>Edit comment: <input type='text' name='comment' value=''/></label>
 <input type='submit' name='save' value='save'/>
 <input type='submit' name='preview' value='preview'/>
 </fieldset>
