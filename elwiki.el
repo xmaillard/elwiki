@@ -84,36 +84,6 @@ should change this."
   :type '(string)
   :group 'elwiki)
 
-(defun elwiki--call (out-buf page-text page)
-  "Call a wiki page sending output OUT-BUF.
-
-The page is faked with PAGE-TEXT."
-  (flet
-      ((elnode--worker-lisp-helper (child-lisp)
-         `((progn
-             (require 'creole)
-             (require 'cl)
-             (flet ((creole--get-file (filename)
-                      (let ((buf (get-buffer-create "wikibuf")))
-                        (with-current-buffer buf
-                          (insert ,page-text))
-                        buf)))
-               ,@child-lisp)))))
-    (elnode-wait-for-exit
-     (elnode-worker-elisp
-         out-buf
-         ((target page)
-          (page-info page)
-          (header elwiki-body-header)
-          (footer elwiki-body-footer))
-       (require 'creole)
-       (creole-wiki
-        target
-        :destination t
-        :variables `((page . ,page-info))
-        :body-header header
-        :body-footer footer)))))
-
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
   "Creole render a WIKIPAGE back to the HTTPCON."
       (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
