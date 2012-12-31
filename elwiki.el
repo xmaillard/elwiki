@@ -106,6 +106,7 @@ should change this."
 
 (defun elwiki--save-request (httpcon wikiroot path text)
   "Process an update request."
+  (elnode-error "Saving page: %s" path)
   (let* ((page (if path
                    (save-match-data
                      (string-match "/wiki/\\(.*\\)$" path)
