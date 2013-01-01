@@ -107,14 +107,12 @@ should change this."
 (defun elwiki--save-request (httpcon wikiroot path text)
   "Process an update request."
   (elnode-error "Saving page: %s" path)
-  (let* ((page (if path
-                   (save-match-data
-                     (string-match "/wiki/\\(.*\\)$" path)
-                     (match-string 1 path))))
+  (let* ((page-name (save-match-data
+                      (string-match "/wiki/\\(.*\\)$" path)
+                      (match-string 1 path)))
          (comment (elnode-http-param httpcon "comment"))
-         (file-name (if (equal page "")
-                        (concat wikiroot "index.creole")
-                      (concat (file-name-as-directory wikiroot) page)))
+         (file-name (expand-file-name (concat (file-name-as-directory wikiroot)
+                                              path ".creole")))
          (buffer (find-file-noselect file-name)))
     (with-current-buffer buffer
       (erase-buffer)
