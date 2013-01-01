@@ -67,19 +67,7 @@ should change this."
   :group 'elwiki)
 
 (defcustom elwiki-body-footer
-  "<div id='footer'>
-<form action='{{page}}' method='POST'>
-<fieldset>
-<legend>Edit this page</legend>
-<textarea  cols='80' rows='20' name='wikitext'>
-{{text}}
-</textarea><br/>
-<label>Edit comment: <input type='text' name='comment' value=''/></label>
-<input type='submit' name='save' value='save'/>
-<input type='submit' name='preview' value='preview'/>
-</fieldset>
-</form>
-</div>"
+  "<div id='footer'></div>"
   "HTML BODY footter for a rendered Wiki page."
   :type '(string)
   :group 'elwiki)
@@ -97,6 +85,27 @@ should change this."
              :variables (list (cons 'page page-info))
              :body-header header
              :body-footer footer))))
+
+(defun elwiki-edit-page (httpcon wikipage &optional pageinfo)
+  "Return an editor for WIKIPAGE via HTTPCON."
+  (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
+  (with-stdout-to-elnode httpcon
+    (let ((page-info (or pageinfo (elnode-http-pathinfo httpcon))))
+      (princ (format "<form action='%s' method='POST'>
+<fieldset>
+<legend>Edit %s</legend>
+<textarea  cols='80' rows='20' name='wikitext'>"
+                     page-info
+                     (file-name-nondirectory page-info)))
+      (with-temp-buffer
+        (insert-file-contents wikipage)
+        (princ (buffer-string)))
+        (princ "</textarea><br/>
+<label>Edit comment: <input type='text' name='comment' value=''/></label>
+<input type='submit' name='save' value='save'/>
+<input type='submit' name='preview' value='preview'/>
+</fieldset>
+</form>"))))
 
 (defun elwiki--text-param (httpcon)
   "Get the text param from HTTPCON and convert it."
@@ -118,14 +127,14 @@ should change this."
       (erase-buffer)
       (insert text)
       (save-buffer)
-      (let ((git-buf
-             (get-buffer-create
-              (generate-new-buffer-name
-               "* elnode wiki commit buf *"))))
-        (shell-command
-         (format "git commit -m '%s' %s" comment file-name)
-         git-buf)
-        (kill-buffer git-buf))
+      ;; (let ((git-buf
+      ;;        (get-buffer-create
+      ;;         (generate-new-buffer-name
+      ;;          "* elnode wiki commit buf *"))))
+      ;;   (shell-command
+      ;;    (format "git commit -m '%s' %s" comment file-name)
+      ;;    git-buf)
+      ;;   (kill-buffer git-buf))
       (elwiki-page httpcon file-name))))
 
 (defun elwiki--router (httpcon)
@@ -144,7 +153,9 @@ ELWIKI-WIKIROOT, back to the HTTPCON.
 
 Update operations are NOT protected by authentication.  Soft
 security is used."
-  (let ((targetfile (elnode-http-mapping httpcon 1)))
+  (let ((targetfile (elnode-http-mapping httpcon 1))
+        (action (intern (or (elnode-http-param httpcon "action")
+                            "none"))))
    (flet ((elnode-http-mapping (httpcon which)
             (concat targetfile ".creole")))
      (elnode-method httpcon
@@ -153,7 +164,11 @@ security is used."
           with target-path
           on httpcon
           do
-          (elwiki-page httpcon target-path)))
+          (case action
+           ((none)
+            (elwiki-page httpcon target-path))
+           ((edit)
+            (elwiki-edit-page httpcon target-path)))))
        (POST
         (let ((path (elnode-http-pathinfo httpcon))
                (text (elwiki--text-param httpcon)))
