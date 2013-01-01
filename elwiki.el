@@ -135,7 +135,7 @@ should change this."
       ;;    (format "git commit -m '%s' %s" comment file-name)
       ;;    git-buf)
       ;;   (kill-buffer git-buf))
-      (elwiki-page httpcon file-name))))
+      (elnode-send-redirect httpcon path))))
 
 (defun elwiki--router (httpcon)
   "Dispatch to a handler based on the URL."
