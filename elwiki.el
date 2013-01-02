@@ -72,24 +72,29 @@ should change this."
   :type '(string)
   :group 'elwiki)
 
+(defun elwiki--render-page (wikipage pageinfo)
+  "Creole render WIKIPAGE to stdout."
+  (creole-wiki
+   wikipage
+   :destination t
+   :variables (list (cons 'page pageinfo))
+   :body-header elwiki-body-header
+   :body-footer elwiki-body-footer))
+
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
   "Creole render a WIKIPAGE back to the HTTPCON."
       (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
       (with-stdout-to-elnode httpcon
-          (let ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
-                (header elwiki-body-header)
-                (footer elwiki-body-footer))
-            (creole-wiki
-             wikipage
-             :destination t
-             :variables (list (cons 'page page-info))
-             :body-header header
-             :body-footer footer))))
+        (elwiki--render-page wikipage (or pageinfo
+                                          (elnode-http-pathinfo httpcon)))))
 
-(defun elwiki-edit-page (httpcon wikipage &optional pageinfo)
+(defun elwiki-edit-page (httpcon wikipage &optional pageinfo preview)
   "Return an editor for WIKIPAGE via HTTPCON."
   (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
   (with-stdout-to-elnode httpcon
+    (when preview
+      (elwiki--render-page wikipage (or pageinfo
+                                        (elnode-http-pathinfo httpcon))))
     (let ((page-info (or pageinfo (elnode-http-pathinfo httpcon))))
       (princ (format "<form action='%s' method='POST'>
 <fieldset>
@@ -180,7 +185,7 @@ security is used."
             ;; text that's been sent.
             (with-temp-file "/tmp/preview"
               (insert text))
-            (elwiki-page httpcon "/tmp/preview" path))))))))
+            (elwiki-edit-page httpcon "/tmp/preview" path t))))))))
 
 ;;;###autoload
 (defun elwiki-test ()
