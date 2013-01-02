@@ -105,12 +105,13 @@ should change this."
       (with-temp-buffer
         (insert-file-contents wikipage)
         (princ (buffer-string)))
-        (princ "</textarea><br/>
+        (princ (format "</textarea><br/>
 <label>Edit comment: <input type='text' name='comment' value=''/></label>
 <input type='submit' name='save' value='save'/>
-<input type='submit' name='preview' value='preview'/>
+<input type='submit' name='preview' value='preview' formaction='%s?action=edit'/>
 </fieldset>
-</form>"))))
+</form>"
+                       page-info)))))
 
 (defun elwiki--text-param (httpcon)
   "Get the text param from HTTPCON and convert it."
@@ -177,15 +178,18 @@ security is used."
        (POST
         (let ((path (elnode-http-pathinfo httpcon))
                (text (elwiki--text-param httpcon)))
-          (if (not (elnode-http-param httpcon "preview"))
-              ;; A save request in which case save the new text and then
-              ;; send the wiki text.
-              (elwiki--save-request httpcon elwiki-wikiroot path text)
-            ;; Might be a preview request in which case send back the WIKI
-            ;; text that's been sent.
+          (cond
+           ((elnode-http-param httpcon "save")
+            ;; A save request in which case save the new text and then
+            ;; send the wiki text.
+            (elwiki--save-request httpcon elwiki-wikiroot path text))
+           ((and (elnode-http-param httpcon "preview")
+                 (eq action 'edit))
+            ;; A preview request in which case send back the WIKI text
+            ;; that's been sent.
             (with-temp-file "/tmp/preview"
               (insert text))
-            (elwiki-edit-page httpcon "/tmp/preview" path t))))))))
+            (elwiki-edit-page httpcon "/tmp/preview" path t)))))))))
 
 ;;;###autoload
 (defun elwiki-test ()
