@@ -106,7 +106,8 @@ should change this."
         (insert-file-contents wikipage)
         (princ (buffer-string)))
         (princ (format "</textarea><br/>
-<label>Edit comment: <input type='text' name='comment' value=''/></label>
+<label>Edit comment: <input type='text' name='comment' value=''/></label><br/>
+<label>Username: <input type='text' name='username' value=''/></label><br/>
 <input type='submit' name='save' value='save'/>
 <input type='submit' name='preview' value='preview' formaction='%s?action=edit'/>
 </fieldset>
@@ -121,14 +122,15 @@ should change this."
 
 (defun elwiki--save-request (httpcon wikiroot path text)
   "Process an update request."
-  (elnode-error "Saving page: %s" path)
   (let* ((page-name (save-match-data
                       (string-match "/wiki/\\(.*\\)$" path)
                       (match-string 1 path)))
          (comment (elnode-http-param httpcon "comment"))
+         (username (elnode-http-param httpcon "username"))
          (file-name (expand-file-name (concat (file-name-as-directory wikiroot)
                                               path ".creole")))
          (buffer (find-file-noselect file-name)))
+    (elnode-error "Saving page %s, edited by %s" page-name username)
     (with-current-buffer buffer
       (erase-buffer)
       (insert text)
@@ -138,7 +140,7 @@ should change this."
               (generate-new-buffer-name
                "* elnode wiki commit buf *"))))
         (shell-command
-         (format "git commit -m '%s' %s" comment file-name)
+         (format "git commit -m 'username:%s\n%s' %s" username comment file-name)
          git-buf)
         (kill-buffer git-buf))
       (elnode-send-redirect httpcon path))))
