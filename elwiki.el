@@ -133,14 +133,14 @@ should change this."
       (erase-buffer)
       (insert text)
       (save-buffer)
-      ;; (let ((git-buf
-      ;;        (get-buffer-create
-      ;;         (generate-new-buffer-name
-      ;;          "* elnode wiki commit buf *"))))
-      ;;   (shell-command
-      ;;    (format "git commit -m '%s' %s" comment file-name)
-      ;;    git-buf)
-      ;;   (kill-buffer git-buf))
+      (let ((git-buf
+             (get-buffer-create
+              (generate-new-buffer-name
+               "* elnode wiki commit buf *"))))
+        (shell-command
+         (format "git commit -m '%s' %s" comment file-name)
+         git-buf)
+        (kill-buffer git-buf))
       (elnode-send-redirect httpcon path))))
 
 (defun elwiki--router (httpcon)
