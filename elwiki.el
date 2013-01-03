@@ -43,8 +43,7 @@
 
 ;;; Code:
 
-(elnode-app elwiki-dir
-    creole)
+(elnode-app elwiki-dir creole)
 
 (defgroup elwiki nil
   "A Wiki server written with Elnode."
@@ -60,26 +59,12 @@ should change this."
   :type '(directory)
   :group 'elwiki)
 
-(defcustom elwiki-body-header
-  "<div id='top'></div>"
-  "HTML BODY preamable of a rendered Wiki page."
-  :type '(string)
-  :group 'elwiki)
-
-(defcustom elwiki-body-footer
-  "<div id='footer'></div>"
-  "HTML BODY footter for a rendered Wiki page."
-  :type '(string)
-  :group 'elwiki)
-
 (defun elwiki--render-page (wikipage pageinfo)
   "Creole render WIKIPAGE to stdout."
   (creole-wiki
    wikipage
    :destination t
-   :variables (list (cons 'page pageinfo))
-   :body-header elwiki-body-header
-   :body-footer elwiki-body-footer))
+   :variables (list (cons 'page pageinfo))))
 
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
   "Creole render a WIKIPAGE back to the HTTPCON."
@@ -119,13 +104,13 @@ should change this."
                        page-info)))))
 
 (defun elwiki--text-param (httpcon)
-  "Get the text param from HTTPCON and convert it."
+  "Get the text parameter from HTTPCON and convert the line endings."
   (replace-regexp-in-string
    "\r" "" ; browsers send text in DOS line ending format
    (elnode-http-param httpcon "wikitext")))
 
 (defun elwiki--save-request (httpcon wikiroot path text)
-  "Process an update request."
+  "Process a page-save request."
   (let* ((page-name (save-match-data
                       (string-match "/wiki/\\(.*\\)$" path)
                       (match-string 1 path)))
@@ -150,7 +135,10 @@ should change this."
       (elnode-send-redirect httpcon path))))
 
 (defun elwiki--router (httpcon)
-  "Dispatch to a handler based on the URL."
+  "Dispatch to a handler depending on the URL.
+
+So, for example, a handler for wiki pages, a separate handler for
+images, and so on."
   (let ((webserver (elnode-webserver-handler-maker
                     (concat elwiki-dir "/static/"))))
     (elnode-hostpath-dispatcher httpcon
@@ -158,10 +146,12 @@ should change this."
        ("^[^/]*//static/\\(.*\\)$" . ,webserver)))))
 
 (defun elwiki--handler (httpcon)
-  "A low level handler for Wiki operations.
+  "A low level handler for wiki operations.
 
-Send the Wiki page requested, which must be a file existing under
-ELWIKI-WIKIROOT, back to the HTTPCON.
+Send the wiki page requested, which must be a file existing under
+ELWIKI-WIKIROOT, back to the HTTPCON.  The extension \".creole\"
+is appended to the page name requested, so the request should not
+include the extension.
 
 Update operations are NOT protected by authentication.  Soft
 security is used."
@@ -193,14 +183,10 @@ security is used."
                  (eq action 'edit))
             ;; A preview request in which case send back the WIKI text
             ;; that's been sent.
-            (with-temp-file "/tmp/preview"
-              (insert text))
-            (elwiki-edit-page httpcon "/tmp/preview" path t)))))))))
-
-;;;###autoload
-(defun elwiki-test ()
-  "Test whether we should serve Wiki or not."
-  (featurep 'creole))
+            (let ((preview-file-name "/tmp/preview"))
+              (with-temp-file preview-file-name
+                (insert text)))
+            (elwiki-edit-page httpcon preview-file-name path t)))))))))
 
 ;;;###autoload
 (defun elwiki-server (httpcon)
@@ -210,7 +196,7 @@ HTTPCON is the request.
 
 The wiki server is only available if the `creole' package is
 provided. Otherwise it will just error."
-  (if (not (elwiki-test))
+  (if (not (featurep 'creole))
       (elnode-send-500 httpcon "The Emacs feature 'creole is required.")
     (elwiki--router httpcon)))
 
