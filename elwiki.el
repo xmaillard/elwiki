@@ -43,7 +43,8 @@
 
 ;;; Code:
 
-(elnode-app elwiki-dir creole)
+(elnode-app elwiki-dir
+    creole esxml)
 
 (defgroup elwiki nil
   "A Wiki server written with Elnode."
@@ -83,25 +84,36 @@ should change this."
     (let ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
           (comment (elnode-http-param httpcon "comment"))
           (username (elnode-http-param httpcon "username")))
-      (princ (format "<form action='%s' method='POST'>
-<fieldset>
-<legend>Edit %s</legend>
-<textarea  cols='80' rows='20' name='wikitext'>"
-                     page-info
-                     (file-name-nondirectory page-info)))
-      (with-temp-buffer
-        (insert-file-contents wikipage)
-        (princ (buffer-string)))
-        (princ (format "</textarea><br/>
-<label>Edit comment: <input type='text' name='comment' value='%s'/></label><br/>
-<label>Username: <input type='text' name='username' value='%s'/></label><br/>
-<input type='submit' name='save' value='save'/>
-<input type='submit' name='preview' value='preview' formaction='%s?action=edit'/>
-</fieldset>
-</form>"
-                       (or comment "")
-                       (or username "")
-                       page-info)))))
+      (princ
+       (esxml-to-xml
+        `(form ((action . page-info)
+                (method . "POST"))
+               (fieldset ()
+                         (legend () ,(format "Edit %s" (file-name-nondirectory page-info)))
+                         (textarea ((cols . "80")
+                                    (rows . "20")
+                                    (name . "wikitext"))
+                                   ,(with-temp-buffer
+                                      (insert-file-contents wikipage)
+                                      (buffer-string)))
+                         (br ())
+                         (label () "Edit comment:"
+                                (input ((type . "text")
+                                        (name . "comment")
+                                        (value . ,(or comment "")))))
+                         (br ())
+                         (label () "Username:"
+                                (input ((type . "text")
+                                        (name . "username")
+                                        (value . ,(or username "")))))
+                         (br ())
+                         (input ((type . "submit")
+                                 (name . "save")
+                                 (value . "save")))
+                         (input ((type . "submit")
+                                 (name . "preview")
+                                 (value . "preview")
+                                 (formaction . ,(format "%s?action=edit" page-info)))))))))))
 
 (defun elwiki--text-param (httpcon)
   "Get the text parameter from HTTPCON and convert the line endings."
