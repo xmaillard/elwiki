@@ -114,7 +114,7 @@ should change this."
            :destination t
            :variables (list (cons 'page (or pageinfo
                                             (elnode-http-pathinfo httpcon))))
-           :body-footer (concat "<div id=editor>" editor "</div"))
+           :body-footer (concat "<div id=editor>" editor "</div>"))
         (princ editor)))))
 
 (defun elwiki--text-param (httpcon)
