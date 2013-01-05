@@ -197,8 +197,8 @@ security is used."
             ;; that's been sent.
             (let ((preview-file-name "/tmp/preview"))
               (with-temp-file preview-file-name
-                (insert text)))
-            (elwiki-edit-page httpcon preview-file-name path t)))))))))
+                (insert text))
+              (elwiki-edit-page httpcon preview-file-name path t))))))))))
 
 ;;;###autoload
 (defun elwiki-server (httpcon)
