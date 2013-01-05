@@ -60,33 +60,27 @@ should change this."
   :type '(directory)
   :group 'elwiki)
 
-(defun elwiki--render-page (wikipage pageinfo)
-  "Creole render WIKIPAGE to stdout."
-  (creole-wiki
-   wikipage
-   :destination t
-   :variables (list (cons 'page pageinfo))))
-
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
   "Creole render a WIKIPAGE back to the HTTPCON."
-      (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
-      (with-stdout-to-elnode httpcon
-        (elwiki--render-page wikipage (or pageinfo
-                                          (elnode-http-pathinfo httpcon)))))
+  (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
+  (with-stdout-to-elnode httpcon
+    (creole-wiki
+     wikipage
+     :destination t
+     :variables (list (cons 'page (or pageinfo
+                                      (elnode-http-pathinfo httpcon)))))))
 
 (defun elwiki-edit-page (httpcon wikipage &optional pageinfo preview)
   "Return an editor for WIKIPAGE via HTTPCON."
   (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
   (with-stdout-to-elnode httpcon
-    (when preview
-      (elwiki--render-page wikipage (or pageinfo
-                                        (elnode-http-pathinfo httpcon))))
-    (let ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
-          (comment (elnode-http-param httpcon "comment"))
-          (username (elnode-http-param httpcon "username")))
-      (princ
-       (esxml-to-xml
-        `(form ((action . page-info)
+    (let* ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
+           (comment (elnode-http-param httpcon "comment"))
+           (username (elnode-http-param httpcon "username"))
+           (editor
+            (esxml-to-xml
+             `(form
+               ((action . page-info)
                 (method . "POST"))
                (fieldset ()
                          (legend () ,(format "Edit %s" (file-name-nondirectory page-info)))
@@ -113,7 +107,15 @@ should change this."
                          (input ((type . "submit")
                                  (name . "preview")
                                  (value . "preview")
-                                 (formaction . ,(format "%s?action=edit" page-info)))))))))))
+                                 (formaction . ,(format "%s?action=edit" page-info)))))))))
+      (if preview
+          (creole-wiki
+           wikipage
+           :destination t
+           :variables (list (cons 'page (or pageinfo
+                                            (elnode-http-pathinfo httpcon))))
+           :body-footer (concat "<div id=editor>" editor "</div"))
+        (princ editor)))))
 
 (defun elwiki--text-param (httpcon)
   "Get the text parameter from HTTPCON and convert the line endings."
