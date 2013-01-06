@@ -181,10 +181,10 @@ security is used."
           on httpcon
           do
           (case action
-           ((none)
-            (elwiki-page httpcon target-path))
-           ((edit)
-            (elwiki-edit-page httpcon target-path)))))
+            (none
+             (elwiki-page httpcon target-path))
+            (edit
+             (elwiki-edit-page httpcon target-path)))))
        (POST
         (let ((path (elnode-http-pathinfo httpcon))
                (text (elwiki--text-param httpcon)))
