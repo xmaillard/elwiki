@@ -1,5 +1,10 @@
-= Elwiki =
+= Overview =
 Elwiki is a wiki engine written in Emacs Lisp and
 using [[https://github.com/nicferrier/elnode|Elnode]].  It is still in
 early development and probably not yet usable for hosting a wiki
 unless you are prepared to also work on developing Elwiki.
+
+= Dependencies =
+Elwiki requires
+* [[https://github.com/nicferrier/elnode|Elnode]]
+* [[https://github.com/tali713/esxml|tali713's esxml library]]
