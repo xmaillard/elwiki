@@ -40,11 +40,16 @@
 ;;
 ;; for private functions.
 
+;;; Git note
+;; Any invocation of git must be from within the working directory of
+;; the wiki in order to keep git from getting confused in the case
+;; that the working directory of the Emacs instance is in a different
+;; Git repository.
 
 ;;; Code:
 
 (elnode-app elwiki-dir
-    creole esxml)
+    creole esxml htmlize)
 
 (defgroup elwiki nil
   "A Wiki server written with Elnode."
@@ -117,6 +122,40 @@ should change this."
            :body-footer (concat "<div id=editor>" editor "</div>"))
         (princ editor)))))
 
+(defun elwiki-history-page (httpcon wikipage)
+  (elnode-error "Generating history page for %s" wikipage)
+  (message (pwd))
+  (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
+  (with-stdout-to-elnode httpcon
+    (princ
+     (esxml-to-xml
+      `(html ()
+             (body ()
+                   (ul ()
+                       ,@(mapcar
+                          (lambda (string)
+                            (append
+                             ;; Each commit in a list item.
+                             '(li ())
+                             ;; Each commit field in a div with a
+                             ;; class attribute.
+                             (map
+                              'list
+                              (lambda (class field)
+                                `(div ((class . ,(symbol-name class)))
+                                      ,(htmlize-protect-string field)))
+                              '(date author subject)
+                              (split-string string "\000"))))
+                          ;; Get the date, author and subject
+                          ;; (delimited by null) of the next n
+                          ;; commits.
+                          (split-string
+                           (let ((default-directory (file-name-directory wikipage)))
+                             (shell-command-to-string
+                              (concat "git log -5 --pretty=format:%ci%x00%an%x00%s "
+                                      wikipage)))
+                           "\n")))))))))
+
 (defun elwiki--text-param (httpcon)
   "Get the text parameter from HTTPCON and convert the line endings."
   (replace-regexp-in-string
@@ -184,7 +223,9 @@ security is used."
             (none
              (elwiki-page httpcon target-path))
             (edit
-             (elwiki-edit-page httpcon target-path)))))
+             (elwiki-edit-page httpcon target-path))
+            (history
+             (elwiki-history-page httpcon target-path)))))
        (POST
         (let ((path (elnode-http-pathinfo httpcon))
                (text (elwiki--text-param httpcon)))
