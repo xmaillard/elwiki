@@ -49,7 +49,7 @@
 ;;; Code:
 
 (elnode-app elwiki-dir
-    creole esxml htmlize)
+    elwiki-vc creole esxml htmlize)
 
 (defgroup elwiki nil
   "A Wiki server written with Elnode."
@@ -133,28 +133,15 @@ should change this."
              (body ()
                    (ul ()
                        ,@(mapcar
-                          (lambda (string)
+                          (lambda (commit)
                             (append
-                             ;; Each commit in a list item.
                              '(li ())
-                             ;; Each commit field in a div with a
-                             ;; class attribute.
-                             (map
-                              'list
-                              (lambda (class field)
-                                `(div ((class . ,(symbol-name class)))
-                                      ,(htmlize-protect-string field)))
-                              '(date author subject)
-                              (split-string string "\000"))))
-                          ;; Get the date, author and subject
-                          ;; (delimited by null) of the next n
-                          ;; commits.
-                          (split-string
-                           (let ((default-directory (file-name-directory wikipage)))
-                             (shell-command-to-string
-                              (concat "git log -5 --pretty=format:%ci%x00%an%x00%s "
-                                      wikipage)))
-                           "\n")))))))))
+                             (mapcar
+                              (lambda (field)
+                                `(div ((class . ,(symbol-name (car field))))
+                                      ,(cdr field)))
+                              commit)))
+                          (elwiki--get-commits wikipage 5)))))))))
 
 (defun elwiki--text-param (httpcon)
   "Get the text parameter from HTTPCON and convert the line endings."
