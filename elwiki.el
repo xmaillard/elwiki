@@ -80,7 +80,7 @@ should change this."
            (editor
             (esxml-to-xml
              `(form
-               ((action . page-info)
+               ((action . ,page-info)
                 (method . "POST"))
                (fieldset ()
                          (legend () ,(format "Edit %s" (file-name-nondirectory page-info)))
