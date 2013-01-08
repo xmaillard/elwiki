@@ -40,12 +40,6 @@
 ;;
 ;; for private functions.
 
-;;; Git note
-;; Any invocation of git must be from within the working directory of
-;; the wiki in order to keep git from getting confused in the case
-;; that the working directory of the Emacs instance is in a different
-;; Git repository.
-
 ;;; Code:
 
 (elnode-app elwiki-dir
@@ -164,14 +158,7 @@ should change this."
       (erase-buffer)
       (insert text)
       (save-buffer)
-      (let ((git-buf
-             (get-buffer-create
-              (generate-new-buffer-name
-               "* elnode wiki commit buf *"))))
-        (shell-command
-         (format "git commit -m 'username:%s\n%s' %s" username comment file-name)
-         git-buf)
-        (kill-buffer git-buf))
+      (elwiki--git-commit-page file-name username comment)
       (elnode-send-redirect httpcon path))))
 
 (defun elwiki--router (httpcon)

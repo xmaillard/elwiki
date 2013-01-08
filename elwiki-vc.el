@@ -64,6 +64,19 @@ TODO: document output format"
                wikipage)))
     "\n")))
 
+(defun elwiki--git-commit-page (file-name username comment)
+  "Commit any changes to FILE-NAME.
+
+USERNAME is the name of the wiki user who submitted the changes,
+and COMMENT is the page-edit comment."
+  (let ((git-buf (get-buffer-create
+                  (generate-new-buffer-name
+                   "*elnode wiki commit buf*"))))
+    (shell-command
+     (format "git commit --dry-run -m 'username:%s\n%s' %s" username comment file-name)
+     git-buf)
+    (kill-buffer git-buf)))
+
 (provide 'elwiki-vc)
 
 ;;; elwiki-vc.el ends here
