@@ -69,12 +69,19 @@ TODO: document output format"
 
 USERNAME is the name of the wiki user who submitted the changes,
 and COMMENT is the page-edit comment."
-  (let ((git-buffer (generate-new-buffer
-                  "*elwiki git-commit output*")))
-    (shell-command
-     (format "git commit --dry-run -m 'username:%s\n%s' %s" username comment file)
-     git-buffer)
-    (kill-buffer git-buffer)))
+  (let ((commit-message-file (make-temp-file
+                              (file-name-nondirectory file))))
+    (with-temp-file commit-message-file
+      (insert (format "username: %s\n" username))
+      (insert comment))
+    (with-temp-buffer
+      (call-process "git"
+                    nil
+                    (current-buffer)
+                    nil
+                    "commit" "--dry-run"
+                    (format "--file=%s" commit-message-file)
+                    file))))
 
 (provide 'elwiki-vc)
 
