@@ -64,7 +64,7 @@ TODO: document output format"
                wikipage)))
     "\n")))
 
-(defun elwiki--git-commit-page (file-name username comment)
+(defun elwiki--commit-page (file-name username comment)
   "Commit any changes to FILE-NAME.
 
 USERNAME is the name of the wiki user who submitted the changes,

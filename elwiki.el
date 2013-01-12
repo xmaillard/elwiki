@@ -158,7 +158,7 @@ should change this."
       (erase-buffer)
       (insert text)
       (save-buffer)
-      (elwiki--git-commit-page file-name username comment)
+      (elwiki--commit-page file-name username comment)
       (elnode-send-redirect httpcon path))))
 
 (defun elwiki--router (httpcon)
