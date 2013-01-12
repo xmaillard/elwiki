@@ -22,11 +22,6 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;; Commentary:
-;;
-;; This is a Wiki Engine completely written in EmacsLisp, using Elnode
-;; as a server.
-;;
 ;;; Source code
 ;;
 ;; elnode's code can be found here:
@@ -39,6 +34,13 @@
 ;;    elwiki--private-function
 ;;
 ;; for private functions.
+
+;;; Commentary:
+;;
+;; This is a Wiki Engine completely written in EmacsLisp, using Elnode
+;; as a server and Creole as the Wiki text language.
+;;
+
 
 ;;; Code:
 
