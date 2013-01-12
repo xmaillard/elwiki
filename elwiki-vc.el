@@ -40,7 +40,7 @@
 
 ;;; Code:
 
-(defun elwiki--get-commits (wikipage number-of-commits)
+(defun elwiki--commit-log (wikipage number-of-commits)
   "Get the last NUMBER-OF-COMMITS commits of WIKIPAGE.
 
 Any HTML in the fields is escaped.

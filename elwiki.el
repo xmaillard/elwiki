@@ -135,7 +135,7 @@ should change this."
                                 `(div ((class . ,(symbol-name (car field))))
                                       ,(cdr field)))
                               commit)))
-                          (elwiki--get-commits wikipage 5)))))))))
+                          (elwiki--commit-log wikipage 5)))))))))
 
 (defun elwiki--text-param (httpcon)
   "Get the text parameter from HTTPCON and convert the line endings."
