@@ -36,7 +36,7 @@
 ;;
 ;; This codes uses the Emacs style of:
 ;;
-;;    elwiki--private-function
+;;    elwiki/private-function
 ;;
 ;; for private functions.
 
@@ -117,13 +117,13 @@ should change this."
            :body-footer (concat "<div id=editor>" editor "</div>"))
         (princ editor)))))
 
-(defun elwiki--text-param (httpcon)
+(defun elwiki/text-param (httpcon)
   "Get the text parameter from HTTPCON and convert the line endings."
   (replace-regexp-in-string
    "\r" "" ; browsers send text in DOS line ending format
    (elnode-http-param httpcon "wikitext")))
 
-(defun elwiki--save-request (httpcon wikiroot path text)
+(defun elwiki/save-request (httpcon wikiroot path text)
   "Process a page-save request."
   (let* ((page-name (save-match-data
                       (string-match "/wiki/\\(.*\\)$" path)
@@ -148,7 +148,7 @@ should change this."
         (kill-buffer git-buf))
       (elnode-send-redirect httpcon path))))
 
-(defun elwiki--router (httpcon)
+(defun elwiki/router (httpcon)
   "Dispatch to a handler depending on the URL.
 
 So, for example, a handler for wiki pages, a separate handler for
@@ -156,10 +156,10 @@ images, and so on."
   (let ((webserver (elnode-webserver-handler-maker
                     (concat elwiki-dir "/static/"))))
     (elnode-hostpath-dispatcher httpcon
-     `(("^[^/]*//wiki/\\(.*\\)" . elwiki--handler)
+     `(("^[^/]*//wiki/\\(.*\\)" . elwiki/handler)
        ("^[^/]*//static/\\(.*\\)$" . ,webserver)))))
 
-(defun elwiki--handler (httpcon)
+(defun elwiki/handler (httpcon)
   "A low level handler for wiki operations.
 
 Send the wiki page requested, which must be a file existing under
@@ -187,12 +187,12 @@ security is used."
             (elwiki-edit-page httpcon target-path)))))
        (POST
         (let ((path (elnode-http-pathinfo httpcon))
-               (text (elwiki--text-param httpcon)))
+               (text (elwiki/text-param httpcon)))
           (cond
            ((elnode-http-param httpcon "save")
             ;; A save request in which case save the new text and then
             ;; send the wiki text.
-            (elwiki--save-request httpcon elwiki-wikiroot path text))
+            (elwiki/save-request httpcon elwiki-wikiroot path text))
            ((and (elnode-http-param httpcon "preview")
                  (eq action 'edit))
             ;; A preview request in which case send back the WIKI text
@@ -212,7 +212,7 @@ The wiki server is only available if the `creole' package is
 provided. Otherwise it will just error."
   (if (not (featurep 'creole))
       (elnode-send-500 httpcon "The Emacs feature 'creole is required.")
-    (elwiki--router httpcon)))
+    (elwiki/router httpcon)))
 
 (provide 'elwiki)
 
