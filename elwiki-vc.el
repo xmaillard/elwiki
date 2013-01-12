@@ -22,25 +22,24 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+;;; Style note
+;;
+;; This codes uses the Emacs style of:
+;;
+;;    elwiki/private-function
+;;
+;; for private functions.
+
 ;;; Commentary:
 ;;
 ;; This is the Git wrapper for Elwiki.  Any invocation of git must be
 ;; from within the working directory of the wiki in order to keep git
 ;; from getting confused in the case that the working directory of the
 ;; Emacs instance is in a different Git repository.
-;;
-
-;;; Style note
-;;
-;; This codes uses the Emacs style of:
-;;
-;;    elwiki--private-function
-;;
-;; for private functions.
 
 ;;; Code:
 
-(defun elwiki--commit-log (file number-of-commits)
+(defun elwiki/commit-log (file number-of-commits)
   "Get the last NUMBER-OF-COMMITS commits of FILE.
 
 Any HTML in the fields is escaped.
@@ -64,7 +63,7 @@ TODO: document output format"
                file)))
     "\n")))
 
-(defun elwiki--commit-page (file username comment)
+(defun elwiki/commit-page (file username comment)
   "Commit any changes to FILE.
 
 USERNAME is the name of the wiki user who submitted the changes,
@@ -72,7 +71,9 @@ and COMMENT is the page-edit comment."
   (let ((git-buffer (generate-new-buffer
                   "*elwiki git-commit output*")))
     (shell-command
-     (format "git commit --dry-run -m 'username:%s\n%s' %s" username comment file)
+     (format
+      "git commit --dry-run -m 'username:%s\n%s' %s"
+      username comment file)
      git-buffer)
     (kill-buffer git-buffer)))
 
