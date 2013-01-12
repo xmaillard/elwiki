@@ -40,8 +40,8 @@
 
 ;;; Code:
 
-(defun elwiki--commit-log (wikipage number-of-commits)
-  "Get the last NUMBER-OF-COMMITS commits of WIKIPAGE.
+(defun elwiki--commit-log (file number-of-commits)
+  "Get the last NUMBER-OF-COMMITS commits of FILE.
 
 Any HTML in the fields is escaped.
 
@@ -57,25 +57,24 @@ TODO: document output format"
      '(date author subject)
      (split-string commit "\000")))
    (split-string
-    (let ((default-directory (file-name-directory wikipage)))
+    (let ((default-directory (file-name-directory file)))
       (shell-command-to-string
        (format "git log -%d --pretty=format:%%ci%%x00%%an%%x00%%s %s"
                number-of-commits
-               wikipage)))
+               file)))
     "\n")))
 
-(defun elwiki--commit-page (file-name username comment)
-  "Commit any changes to FILE-NAME.
+(defun elwiki--commit-page (file username comment)
+  "Commit any changes to FILE.
 
 USERNAME is the name of the wiki user who submitted the changes,
 and COMMENT is the page-edit comment."
-  (let ((git-buf (get-buffer-create
-                  (generate-new-buffer-name
-                   "*elnode wiki commit buf*"))))
+  (let ((git-buffer (generate-new-buffer
+                  "*elwiki git-commit output*")))
     (shell-command
-     (format "git commit --dry-run -m 'username:%s\n%s' %s" username comment file-name)
-     git-buf)
-    (kill-buffer git-buf)))
+     (format "git commit --dry-run -m 'username:%s\n%s' %s" username comment file)
+     git-buffer)
+    (kill-buffer git-buffer)))
 
 (provide 'elwiki-vc)
 
