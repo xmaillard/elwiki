@@ -63,13 +63,23 @@ should change this."
 
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
   "Creole render a WIKIPAGE back to the HTTPCON."
-  (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
-  (with-stdout-to-elnode httpcon
-    (creole-wiki
-     wikipage
-     :destination t
-     :variables (list (cons 'page (or pageinfo
-                                      (elnode-http-pathinfo httpcon)))))))
+  (let* ((commit (elnode-http-param httpcon "rev"))
+         (page-buffer (when commit (elwiki/get-revision wikipage commit))))
+    (if (and commit
+             (not page-buffer))
+        ;; A specific page revision was requested, but we failed to get it.
+        (elnode-send-404 httpcon "No such page revision.")
+      (progn
+        (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
+        (with-stdout-to-elnode httpcon
+          (creole-wiki
+           (or page-buffer wikipage)
+           :destination t
+           :variables (list (cons 'page (or pageinfo
+                                            (elnode-http-pathinfo httpcon))))))))
+
+    (when page-buffer
+      (kill-buffer page-buffer))))
 
 (defun elwiki-edit-page (httpcon wikipage &optional pageinfo preview)
   "Return an editor for WIKIPAGE via HTTPCON."

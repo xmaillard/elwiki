@@ -82,6 +82,32 @@ and COMMENT is the page-edit comment."
                     (format "--file=%s" commit-message-file)
                     file))))
 
+(defun elwiki/get-revision (file commit)
+  "Get the version of FILE from COMMIT.
+
+Returns the requested version of FILE in a buffer, or NIL if
+there is no such file in COMMIT or there is no such COMMIT.
+
+Only handles text files."
+  (let* ((default-directory (file-name-directory file))
+         (file-name-relateive (save-match-data
+                                (string-match "/\\(wiki/.*\\)$" file)
+                                (match-string 1 file)))
+         (git-buffer (generate-new-buffer
+                      (format "*%s:%s*" commit file-name-relateive))))
+    (elnode-error "Running git show %s:%s" commit file-name-relateive)
+    (let ((exit-status
+           (call-process "git"
+                         nil
+                         git-buffer
+                         nil
+                         "show" (format "%s:%s" commit file-name-relateive))))
+      (with-current-buffer git-buffer
+        (elnode-error "git output: %s" (buffer-string)))
+      (if (= 0 exit-status)
+          git-buffer
+        nil))))
+
 (provide 'elwiki-vc)
 
 ;;; elwiki-vc.el ends here
