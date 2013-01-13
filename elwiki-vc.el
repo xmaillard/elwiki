@@ -53,12 +53,12 @@ TODO: document output format"
     (mapcar*
      (lambda (k v)
        (cons k (htmlize-protect-string v)))
-     '(date author subject)
+     '(hash date author subject)
      (split-string commit "\000")))
    (split-string
     (let ((default-directory (file-name-directory file)))
       (shell-command-to-string
-       (format "git log -%d --pretty=format:%%ci%%x00%%an%%x00%%s %s"
+       (format "git log -%d --pretty=format:%%h%%x00%%ci%%x00%%an%%x00%%s %s"
                number-of-commits
                file)))
     "\n")))

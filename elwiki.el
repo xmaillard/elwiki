@@ -141,7 +141,10 @@ should change this."
                       (lambda (commit)
                         (kvmap-bind (class &rest field)
                             `(div ((class . ,(symbol-name class)))
-                                  ,field)
+                                  ,(if (string= "hash" class)
+                                       (esxml-link (concat "?rev=" field)
+                                        field)
+                                     field))
                           commit))
                       (elwiki/commit-log wikipage 5)))))))))
 
