@@ -76,7 +76,11 @@ should change this."
            (or page-buffer wikipage)
            :destination t
            :variables (list (cons 'page (or pageinfo
-                                            (elnode-http-pathinfo httpcon))))))))
+                                            (elnode-http-pathinfo httpcon))))
+           :body-footer (pp-esxml-to-xml
+                         `(div ((class . "actions"))
+                               ,(esxml-link "?action=edit" "Edit this page")
+                               ,(esxml-link "?action=history" "View page history")))))))
 
     (when page-buffer
       (kill-buffer page-buffer))))
