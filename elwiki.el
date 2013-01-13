@@ -133,20 +133,17 @@ should change this."
   (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
   (with-stdout-to-elnode httpcon
     (princ
-     (esxml-to-xml
+     (pp-esxml-to-xml
       `(html ()
              (body ()
-                   (ul ()
-                       ,@(mapcar
-                          (lambda (commit)
-                            (append
-                             '(li ())
-                             (mapcar
-                              (lambda (field)
-                                `(div ((class . ,(symbol-name (car field))))
-                                      ,(cdr field)))
-                              commit)))
-                          (elwiki--commit-log wikipage 5)))))))))
+                   ,(esxml-listify
+                     (mapcar
+                      (lambda (commit)
+                        (kvmap-bind (class &rest field)
+                            `(div ((class . ,(symbol-name class)))
+                                  ,field)
+                          commit))
+                      (elwiki/commit-log wikipage 5)))))))))
 
 (defun elwiki/text-param (httpcon)
   "Get the text parameter from HTTPCON and convert the line endings."
