@@ -130,7 +130,6 @@ should change this."
 
 (defun elwiki-history-page (httpcon wikipage)
   (elnode-error "Generating history page for %s" wikipage)
-  (message (pwd))
   (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
   (with-stdout-to-elnode httpcon
     (princ
