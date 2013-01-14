@@ -1,9 +1,8 @@
-= Elnode Wiki =
+= Elwiki =
 
 {{/static/emacs.png}}
 
-This is Elnode's Wiki.  It is based on the {{{creole}}} wiki language
-and is written completely in EmacsLisp.
+This is an example page showing off Elwiki.  It is based on the {{{creole}}} wiki language and is written completely in Emacs Lisp.
 
 == What does it do? ==
 
@@ -81,5 +80,4 @@ and lisp callouts:
    "\n")
 )>>
 
-There is more to do with the Elnode Wiki server because there is so
-much that Emacs can do.
+There is more to do with the Elnode Wiki server because there is so much that Emacs can do.
