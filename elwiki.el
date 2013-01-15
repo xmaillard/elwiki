@@ -61,6 +61,21 @@ should change this."
   :type '(directory)
   :group 'elwiki)
 
+(defun* elwiki/render-page (httpcon wikipage pageinfo &key header footer)
+  "Creole render a WIKIPAGE back to the HTTPCON.
+
+HEADER and FOOTER are put before and after the rendered WIKIPAGE,
+verbatim."
+  (with-stdout-to-elnode httpcon
+    (apply
+     'creole-wiki
+     `(,wikipage
+       :destination t
+       :variables ,(list (cons 'page (or pageinfo
+                                         (elnode-http-pathinfo httpcon))))
+       ,@(if header `(:body-header ,header))
+       ,@(if footer `(:body-footer ,footer))))))
+
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
   "Creole render a WIKIPAGE back to the HTTPCON."
   (let* ((commit (elnode-http-param httpcon "rev"))
@@ -71,16 +86,14 @@ should change this."
         (elnode-send-404 httpcon "No such page revision.")
       (progn
         (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
-        (with-stdout-to-elnode httpcon
-          (creole-wiki
-           (or page-buffer wikipage)
-           :destination t
-           :variables (list (cons 'page (or pageinfo
-                                            (elnode-http-pathinfo httpcon))))
-           :body-footer (pp-esxml-to-xml
-                         `(div ((class . "actions"))
-                               ,(esxml-link "?action=edit" "Edit this page")
-                               ,(esxml-link "?action=history" "View page history")))))))
+        (elwiki/render-page
+         httpcon
+         (or page-buffer wikipage)
+         pageinfo
+         :footer (pp-esxml-to-xml
+                  `(div ((class . "actions"))
+                        ,(esxml-link "?action=edit" "Edit this page")
+                        ,(esxml-link "?action=history" "View page history"))))))
 
     (when page-buffer
       (kill-buffer page-buffer))))
@@ -124,12 +137,11 @@ should change this."
                                  (value . "preview")
                                  (formaction . ,(format "%s?action=edit" page-info)))))))))
       (if preview
-          (creole-wiki
+          (elwiki/render-page
+           httpcon
            wikipage
-           :destination t
-           :variables (list (cons 'page (or pageinfo
-                                            (elnode-http-pathinfo httpcon))))
-           :body-footer (concat "<div id=editor>" editor "</div>"))
+           page-info
+           :footer (format "<div id=editor>%s</div>" editor))
         (princ editor)))))
 
 (defun elwiki-history-page (httpcon wikipage)
