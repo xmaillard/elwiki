@@ -85,7 +85,7 @@ verbatim."
         ;; A specific page revision was requested, but we failed to get it.
         (elnode-send-404 httpcon "No such page revision.")
       (progn
-        (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
+        (elnode-http-start httpcon 200 '("Content-type" . "text/html"))
         (elwiki/render-page
          httpcon
          (or page-buffer wikipage)
@@ -100,7 +100,7 @@ verbatim."
 
 (defun elwiki-edit-page (httpcon wikipage &optional pageinfo preview)
   "Return an editor for WIKIPAGE via HTTPCON."
-  (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
+  (elnode-http-start httpcon 200 '("Content-type" . "text/html"))
   (with-stdout-to-elnode httpcon
     (let* ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
            (comment (elnode-http-param httpcon "comment"))
@@ -146,7 +146,7 @@ verbatim."
 
 (defun elwiki-history-page (httpcon wikipage)
   (elnode-error "Generating history page for %s" wikipage)
-  (elnode-http-start httpcon 200 `("Content-type" . "text/html"))
+  (elnode-http-start httpcon 200 '("Content-type" . "text/html"))
   (with-stdout-to-elnode httpcon
     (princ
      (pp-esxml-to-xml
