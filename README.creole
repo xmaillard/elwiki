@@ -8,3 +8,8 @@ unless you are prepared to also work on developing Elwiki.
 Elwiki requires
 * [[https://github.com/nicferrier/elnode|Elnode]]
 * [[https://github.com/tali713/esxml|tali713's esxml library]]
+
+= Acknowledgements =
+Thanks to
+* Nic Ferrier for writing Elnode, and always being there to bug, and
+* tali713 for his help with esxml
