@@ -189,7 +189,7 @@ verbatim."
             (erase-buffer)
             (insert text)
             (save-buffer)
-            (elwiki--commit-page file-name username comment)
+            (elwiki/commit-page file-name username comment)
             (elnode-send-redirect httpcon path)))
       (elnode-send-status httpcon 531 "Incorrect captcha solution."))))
 
