@@ -185,7 +185,7 @@ verbatim."
       (erase-buffer)
       (insert text)
       (save-buffer)
-      (elwiki--commit-page file-name username comment)
+      (elwiki/commit-page file-name username comment)
       (elnode-send-redirect httpcon path))))
 
 (defun elwiki/router (httpcon)
