@@ -137,7 +137,7 @@ verbatim."
                                  (name . "preview")
                                  (value . "preview")
                                  (formaction . ,(format "%s?action=edit" page-info)))))
-               ,elwiki/captcha-esxml))))
+               ,(elwiki/captcha-esxml)))))
       (if preview
           (elwiki/render-page
            httpcon

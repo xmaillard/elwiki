@@ -49,7 +49,11 @@
   :type 'string
   :group 'elwiki/captcha)
 
-(defvar elwiki/captcha-esxml
+(defun elwiki/captcha-esxml ()
+  "Generates the HTML for the captcha.
+
+A <fieldset>, in esxml form, to be included in a
+captcha-protected <form>."
   `(fieldset ()
              (script ((type . "text/javascript")
                       (src . ,(concat "http://www.google.com/recaptcha/api/challenge?k="
@@ -69,11 +73,7 @@
                                  "")
                        (input ((type . "hidden")
                                (name . "recaptcha_response_field")
-                               (value . "manual_challenge")))))
-  "The HTML for the captcha.
-
-A <fieldset>, in esxml form, to be included in a
-captcha-protected <form>.")
+                               (value . "manual_challenge"))))))
 
 (defvar elwiki/captcha-verification-url
   "http://www.google.com/recaptcha/api/verify"
