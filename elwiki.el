@@ -107,7 +107,7 @@ verbatim."
            (comment (elnode-http-param httpcon "comment"))
            (username (elnode-http-param httpcon "username"))
            (editor
-            (esxml-to-xml
+            (pp-esxml-to-xml
              `(form
                ((action . ,page-info)
                 (method . "POST"))
