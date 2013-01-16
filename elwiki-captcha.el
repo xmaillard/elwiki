@@ -88,18 +88,20 @@ captcha-protected <form>."
          (url-request-extra-headers '(("Content-Type" . "application/x-www-form-urlencoded")))
          (url-request-data (format "privatekey=%s&remoteip=%s&challenge=%s&response=%s"
                                    elwiki/recaptcha-private-key remoteip challenge response))
-         (result))
+         (response)
+         (correct-solution-p)
+         (error-code))
     (with-current-buffer (url-retrieve-synchronously elwiki/captcha-verification-url)
-      (setq result
-            (mapcar*
-             (lambda (k v)
-               (cons k v))
-             '(correct-solution-p error-code)
-             (split-string (buffer-string) "\n"))))
-    (if (string= "true" (cdr (assoc 'correct-solution-p result)))
+      (setq response (buffer-string))
+      (save-match-data
+        (string-match "^\n\\([a-z]+\\)*\n\\(.*\\)" response)
+        (setq correct-solution-p (match-string 1 response)
+              error-code (match-string 2 response))))
+    ;; Just return silently on success, but print an error message on
+    ;; failure.
+    (if (string= "true" correct-solution-p)
         t
-      (elnode-error "reCAPTCHA returned error: %s"
-                    (cdr (assoc 'error-code result)))
+      (elnode-error "reCAPTCHA returned error: %s" error-code)
       nil)))
 
 (provide 'elwiki-captcha)
