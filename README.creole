@@ -11,5 +11,6 @@ Elwiki requires
 
 = Acknowledgements =
 Thanks to
-* Nic Ferrier for writing Elnode, and always being there to bug, and
-* tali713 for his help with esxml
+* Nic Ferrier for writing Elnode, and always being there to bug,
+* tali713 for his help with esxml, and
+* Frederico Munoz for his help with writing the reCAPTCHA interface.
