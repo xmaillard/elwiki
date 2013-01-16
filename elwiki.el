@@ -45,7 +45,8 @@
 ;;; Code:
 
 (elnode-app elwiki-dir
-    elwiki-vc creole esxml htmlize)
+    elwiki-vc elwiki-captcha
+    creole esxml htmlize)
 
 (defgroup elwiki nil
   "A Wiki server written with Elnode."
@@ -135,7 +136,8 @@ verbatim."
                          (input ((type . "submit")
                                  (name . "preview")
                                  (value . "preview")
-                                 (formaction . ,(format "%s?action=edit" page-info)))))))))
+                                 (formaction . ,(format "%s?action=edit" page-info)))))
+               ,elwiki/captcha-esxml))))
       (if preview
           (elwiki/render-page
            httpcon
@@ -180,13 +182,16 @@ verbatim."
          (file-name (expand-file-name (concat (file-name-as-directory wikiroot)
                                               path ".creole")))
          (buffer (find-file-noselect file-name)))
-    (elnode-error "Saving page %s, edited by %s" page-name username)
-    (with-current-buffer buffer
-      (erase-buffer)
-      (insert text)
-      (save-buffer)
-      (elwiki--commit-page file-name username comment)
-      (elnode-send-redirect httpcon path))))
+    (if (elwiki/captcha-verify httpcon)
+        (progn
+          (elnode-error "Saving page %s, edited by %s" page-name username)
+          (with-current-buffer buffer
+            (erase-buffer)
+            (insert text)
+            (save-buffer)
+            (elwiki--commit-page file-name username comment)
+            (elnode-send-redirect httpcon path)))
+      (elnode-send-status httpcon 531 "Incorrect captcha solution."))))
 
 (defun elwiki/router (httpcon)
   "Dispatch to a handler depending on the URL.
