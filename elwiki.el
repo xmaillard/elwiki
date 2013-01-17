@@ -88,7 +88,7 @@ verbatim."
    (elnode-http-send-string
     httpcon
     (esxml-to-xml
-     `(title () page-name)))
+     `(title () ,page-name)))
    (elnode-http-send-string httpcon "</head>\n<body>\n")
    (when header
      (elnode-http-send-string httpcon header))
