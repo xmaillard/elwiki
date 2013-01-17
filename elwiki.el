@@ -73,8 +73,8 @@ verbatim."
        :destination t
        :variables ,(list (cons 'page (or pageinfo
                                          (elnode-http-pathinfo httpcon))))
-       ,@(if header `(:body-header ,header))
-       ,@(if footer `(:body-footer ,footer))))))
+       ,@(when header `(:body-header ,header))
+       ,@(when footer `(:body-footer ,footer))))))
 
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
   "Creole render a WIKIPAGE back to the HTTPCON."
