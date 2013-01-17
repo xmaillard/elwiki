@@ -61,20 +61,48 @@ should change this."
   :type '(directory)
   :group 'elwiki)
 
+(defcustom elwiki-global-stylesheet
+  "/static/style.css"
+  "The filename of the stylesheet to use on all pages.
+
+The path must be relative to `elwiki-wikiroot' and start with a
+slash.  In most cases, the file should be in \"/static/\"."
+  :type '(file)
+  :group 'elwiki)
+
 (defun* elwiki/render-page (httpcon wikipage pageinfo &key header footer)
   "Creole render a WIKIPAGE back to the HTTPCON.
 
 HEADER and FOOTER are put before and after the rendered WIKIPAGE,
 verbatim."
-  (with-stdout-to-elnode httpcon
-    (apply
-     'creole-wiki
-     `(,wikipage
-       :destination t
-       :variables ,(list (cons 'page (or pageinfo
-                                         (elnode-http-pathinfo httpcon))))
-       ,@(when header `(:body-header ,header))
-       ,@(when footer `(:body-footer ,footer))))))
+  (let ((page-name (or pageinfo
+                       (file-name-sans-extension
+                        (file-name-nondirectory wikipage)))))
+   (elnode-http-send-string httpcon "<html>\n<head>")
+   (elnode-http-send-string
+    httpcon
+    (esxml-to-xml
+     `(link ((type . "text/css")
+             (rel . "stylesheet")
+             (href . ,elwiki-global-stylesheet)))))
+   (elnode-http-send-string
+    httpcon
+    (esxml-to-xml
+     `(title () page-name)))
+   (elnode-http-send-string httpcon "</head>\n<body>\n")
+   (when header
+     (elnode-http-send-string httpcon header))
+   (elnode-http-send-string
+    httpcon
+    (with-temp-buffer
+      (insert-file-contents wikipage)
+      (with-current-buffer
+          (creole-html (current-buffer) nil
+                       :do-font-lock t)
+        (buffer-string))))
+   (when footer
+     (elnode-http-send-string httpcon footer))
+   (elnode-http-return httpcon "</body>\n</html>")))
 
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
   "Creole render a WIKIPAGE back to the HTTPCON."
