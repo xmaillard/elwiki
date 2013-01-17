@@ -129,68 +129,76 @@ verbatim."
 (defun elwiki-edit-page (httpcon wikipage &optional pageinfo preview)
   "Return an editor for WIKIPAGE via HTTPCON."
   (elnode-http-start httpcon 200 '("Content-type" . "text/html"))
-  (with-stdout-to-elnode httpcon
-    (let* ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
-           (comment (elnode-http-param httpcon "comment"))
-           (username (elnode-http-param httpcon "username"))
-           (editor
-            (esxml-to-xml
-             `(form
-               ((action . ,page-info)
-                (method . "POST"))
-               (fieldset ()
-                         (legend () ,(format "Edit %s" (file-name-nondirectory page-info)))
-                         (textarea ((cols . "80")
-                                    (rows . "20")
-                                    (name . "wikitext"))
-                                   ,(with-temp-buffer
-                                      (insert-file-contents wikipage)
-                                      (buffer-string)))
-                         (br ())
-                         (label () "Edit comment:"
-                                (input ((type . "text")
-                                        (name . "comment")
-                                        (value . ,(or comment "")))))
-                         (br ())
-                         (label () "Username:"
-                                (input ((type . "text")
-                                        (name . "username")
-                                        (value . ,(or username "")))))
-                         (br ())
-                         (input ((type . "submit")
-                                 (name . "save")
-                                 (value . "save")))
-                         (input ((type . "submit")
-                                 (name . "preview")
-                                 (value . "preview")
-                                 (formaction . ,(format "%s?action=edit" page-info)))))))))
-      (if preview
-          (elwiki/render-page
-           httpcon
-           wikipage
-           page-info
-           :footer (format "<div id=editor>%s</div>" editor))
-        (princ editor)))))
+  (let* ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
+         (comment (elnode-http-param httpcon "comment"))
+         (username (elnode-http-param httpcon "username"))
+         (editor
+          (esxml-to-xml
+           `(form
+             ((action . ,page-info)
+              (method . "POST"))
+             (fieldset ()
+                       (legend () ,(format "Edit %s" (file-name-nondirectory page-info)))
+                       (textarea ((cols . "80")
+                                  (rows . "20")
+                                  (name . "wikitext"))
+                                 ,(with-temp-buffer
+                                    (insert-file-contents wikipage)
+                                    (buffer-string)))
+                       (br ())
+                       (label () "Edit comment:"
+                              (input ((type . "text")
+                                      (name . "comment")
+                                      (value . ,(or comment "")))))
+                       (br ())
+                       (label () "Username:"
+                              (input ((type . "text")
+                                      (name . "username")
+                                      (value . ,(or username "")))))
+                       (br ())
+                       (input ((type . "submit")
+                               (name . "save")
+                               (value . "save")))
+                       (input ((type . "submit")
+                               (name . "preview")
+                               (value . "preview")
+                               (formaction . ,(format "%s?action=edit" page-info)))))))))
+    (if preview
+        (elwiki/render-page
+         httpcon
+         wikipage
+         page-info
+         :footer (format "<div id=editor>%s</div>" editor))
+      (elnode-send-html
+       httpcon
+       (esxml-to-xml
+        `(html ()
+               (head ()
+                     (link ((type . "text/css")
+                            (rel . "stylesheet")
+                            (href . ,elwiki-global-stylesheet))))
+               (body ()
+                     ,editor)))))))
 
 (defun elwiki-history-page (httpcon wikipage)
   (elnode-error "Generating history page for %s" wikipage)
   (elnode-http-start httpcon 200 '("Content-type" . "text/html"))
-  (with-stdout-to-elnode httpcon
-    (princ
-     (pp-esxml-to-xml
-      `(html ()
-             (body ()
-                   ,(esxml-listify
-                     (mapcar
-                      (lambda (commit)
-                        (kvmap-bind (class &rest field)
-                            `(div ((class . ,(symbol-name class)))
-                                  ,(if (string= "hash" class)
-                                       (esxml-link (concat "?rev=" field)
-                                        field)
-                                     field))
-                          commit))
-                      (elwiki/commit-log wikipage 5)))))))))
+  (elnode-send-html
+   httpcon
+   (pp-esxml-to-xml
+    `(html ()
+           (body ()
+                 ,(esxml-listify
+                   (mapcar
+                    (lambda (commit)
+                      (kvmap-bind (class &rest field)
+                          `(div ((class . ,(symbol-name class)))
+                                ,(if (string= "hash" class)
+                                     (esxml-link (concat "?rev=" field)
+                                                 field)
+                                   field))
+                        commit))
+                    (elwiki/commit-log wikipage 5))))))))
 
 (defun elwiki/text-param (httpcon)
   "Get the text parameter from HTTPCON and convert the line endings."
