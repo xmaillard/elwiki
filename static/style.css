@@ -1,0 +1,46 @@
+span.doc {
+  color: #8b2252;
+  font-style: italic;
+  font-family: monospace;
+  font-weight: 500;
+  font-size: 10pt;
+  text-decoration: none;
+}
+
+span.function-name {
+  color: #0000ff;
+  font-family: monospace;
+  font-weight: 500;
+  font-size: 10pt;
+}
+
+span.comment {
+  color: #b22222;
+  font-weight: 700;
+  font-style: italic;
+  font-family: monospace;
+  font-size: 10pt;
+}
+
+span.comment-delimiter {
+  color: #b22222;
+  font-weight: 700;
+  font-style: italic;
+  font-family: monospace;
+  font-size: 10pt;
+}
+
+span.string {
+  color: #8b2252;
+  font-style: italic;
+  font-family: monospace;
+  font-weight: 500;
+  font-size: 10pt;
+}
+
+span.keyword {
+  color: #a020f0;
+  font-weight: 700;
+  font-family: monospace;
+  font-size: 10pt;
+}
