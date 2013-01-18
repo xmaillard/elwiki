@@ -61,6 +61,14 @@ should change this."
   :type '(directory)
   :group 'elwiki)
 
+(defcustom elwiki-wiki-name
+  "Elwiki"
+  "The name of the wiki.
+
+This is used to prefix the page title."
+  :type 'string
+  :group 'elwiki)
+
 (defcustom elwiki-global-stylesheet
   "/static/style.css"
   "The filename of the stylesheet to use on all pages.
@@ -88,7 +96,7 @@ verbatim."
    (elnode-http-send-string
     httpcon
     (esxml-to-xml
-     `(title () ,page-name)))
+     `(title () ,(format "%s: %s" elwiki-wiki-name page-name))))
    (elnode-http-send-string httpcon "</head>\n<body>\n")
    (when header
      (elnode-http-send-string httpcon header))
