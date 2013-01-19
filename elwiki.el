@@ -78,28 +78,46 @@ slash.  In most cases, the file should be in \"/static/\"."
   :type '(file)
   :group 'elwiki)
 
-(defun* elwiki/render-page (httpcon wikipage pageinfo &key header footer)
+(defun* elwiki/render-page (httpcon wikipage pageinfo &key pre post)
   "Creole render a WIKIPAGE back to the HTTPCON.
 
-HEADER and FOOTER are put before and after the rendered WIKIPAGE,
+PRE and POST are put before and after the rendered WIKIPAGE,
 verbatim."
   (let ((page-name (or pageinfo
                        (file-name-sans-extension
-                        (file-name-nondirectory wikipage)))))
+                        (file-name-nondirectory wikipage))))
+        (wiki-header-file (concat (file-name-as-directory elwiki-wikiroot)
+                                       "/wiki/__header.creole"))
+        (wiki-footer-file (concat (file-name-as-directory elwiki-wikiroot)
+                                       "/wiki/__footer.creole")))
    (elnode-http-send-string httpcon "<html>\n<head>")
+   ;; Link stylesheet.
    (elnode-http-send-string
     httpcon
     (esxml-to-xml
      `(link ((type . "text/css")
              (rel . "stylesheet")
              (href . ,elwiki-global-stylesheet)))))
+   ;; Document title.
    (elnode-http-send-string
     httpcon
     (esxml-to-xml
      `(title () ,(format "%s: %s" elwiki-wiki-name page-name))))
    (elnode-http-send-string httpcon "</head>\n<body>\n")
-   (when header
-     (elnode-http-send-string httpcon header))
+   ;; Site-wide header.
+   (when (file-exists-p wiki-header-file)
+     (elnode-http-send-string
+      httpcon
+      (with-temp-buffer
+        (insert-file-contents wiki-header-file)
+        (with-current-buffer
+            (creole-html (current-buffer) nil
+                         :do-font-lock t)
+          (buffer-string)))))
+   ;; Argument-passed header.
+   (when pre
+     (elnode-http-send-string httpcon pre))
+   ;; Rendered creole page.
    (elnode-http-send-string
     httpcon
     (with-temp-buffer
@@ -108,8 +126,19 @@ verbatim."
           (creole-html (current-buffer) nil
                        :do-font-lock t)
         (buffer-string))))
-   (when footer
-     (elnode-http-send-string httpcon footer))
+   ;; Argument-passed footer.
+   (when post
+     (elnode-http-send-string httpcon post))
+   ;; Site-wide footer.
+   (when (file-exists-p wiki-footer-file)
+     (elnode-http-send-string
+      httpcon
+      (with-temp-buffer
+        (insert-file-contents wiki-footer-file)
+        (with-current-buffer
+            (creole-html (current-buffer) nil
+                         :do-font-lock t)
+          (buffer-string)))))
    (elnode-http-return httpcon "</body>\n</html>")))
 
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
@@ -126,7 +155,7 @@ verbatim."
          httpcon
          (or page-buffer wikipage)
          pageinfo
-         :footer (pp-esxml-to-xml
+         :post (pp-esxml-to-xml
                   `(div ((class . "actions"))
                         ,(esxml-link "?action=edit" "Edit this page")
                         ,(esxml-link "?action=history" "View page history"))))))
@@ -176,7 +205,7 @@ verbatim."
          httpcon
          wikipage
          page-info
-         :footer (format "<div id=editor>%s</div>" editor))
+         :post (format "<div id=editor>%s</div>" editor))
       (elnode-send-html
        httpcon
        (esxml-to-xml
