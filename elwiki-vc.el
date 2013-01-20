@@ -46,7 +46,11 @@ Skips the first SKIP-COMMITS commits.
 
 Any HTML in the fields is escaped.
 
-TODO: document output format"
+Reurns a list of commits as alists of the form
+  ((hash . xxxxxxx)
+   (date . \"yyyy-dd-mm hh:mm:ss +TZ\")
+   (author . \"John Smith\")
+   (subject . \"commit subject line\"))"
  ;; Get the date, author and subject
  ;; (delimited by null) of the next n
  ;; commits.
