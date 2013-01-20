@@ -172,7 +172,7 @@ verbatim."
          (editor
           (esxml-to-xml
            `(form
-             ((action . ,page-info)
+             ((action . ,(format "%s?action=edit" page-info))
               (method . "POST"))
              (fieldset ()
                        (legend () ,(format "Edit %s" (file-name-nondirectory page-info)))
@@ -198,8 +198,7 @@ verbatim."
                                (value . "save")))
                        (input ((type . "submit")
                                (name . "preview")
-                               (value . "preview")
-                               (formaction . ,(format "%s?action=edit" page-info)))))))))
+                               (value . "preview"))))))))
     (if preview
         (elwiki/render-page
          httpcon
@@ -308,14 +307,15 @@ security is used."
         (let ((path (elnode-http-pathinfo httpcon))
                (text (elwiki/text-param httpcon)))
           (cond
-           ((elnode-http-param httpcon "save")
-            ;; A save request in which case save the new text and then
-            ;; send the wiki text.
+           ;; A save request in which case save the new text and then
+           ;; send the wiki text.
+           ((and (elnode-http-param httpcon "save")
+                 (eq action 'edit))
             (elwiki/save-request httpcon elwiki-wikiroot path text))
+           ;; A preview request in which case send back the WIKI text
+           ;; that's been sent.
            ((and (elnode-http-param httpcon "preview")
                  (eq action 'edit))
-            ;; A preview request in which case send back the WIKI text
-            ;; that's been sent.
             (let ((preview-file-name "/tmp/preview"))
               (with-temp-file preview-file-name
                 (insert text))
