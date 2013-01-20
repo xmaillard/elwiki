@@ -39,8 +39,10 @@
 
 ;;; Code:
 
-(defun elwiki/commit-log (file number-of-commits)
+(defun elwiki/commit-log (file number-of-commits skip-commits)
   "Get the last NUMBER-OF-COMMITS commits of FILE.
+
+Skips the first SKIP-COMMITS commits.
 
 Any HTML in the fields is escaped.
 
@@ -58,7 +60,8 @@ TODO: document output format"
    (split-string
     (let ((default-directory (file-name-directory file)))
       (shell-command-to-string
-       (format "git log -%d --pretty=format:%%h%%x00%%ci%%x00%%an%%x00%%s %s"
+       (format "git log --skip=%d -%d --pretty=format:%%h%%x00%%ci%%x00%%an%%x00%%s %s"
+               skip-commits
                number-of-commits
                file)))
     "\n")))

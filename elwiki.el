@@ -220,22 +220,26 @@ verbatim."
 (defun elwiki-history-page (httpcon wikipage)
   (elnode-error "Generating history page for %s" wikipage)
   (elnode-http-start httpcon 200 '("Content-type" . "text/html"))
-  (elnode-send-html
-   httpcon
-   (pp-esxml-to-xml
-    `(html ()
-           (body ()
-                 ,(esxml-listify
-                   (mapcar
-                    (lambda (commit)
-                      (kvmap-bind (class &rest field)
-                          `(div ((class . ,(symbol-name class)))
-                                ,(if (string= "hash" class)
-                                     (esxml-link (concat "?rev=" field)
-                                                 field)
-                                   field))
-                        commit))
-                    (elwiki/commit-log wikipage 5))))))))
+  (let ((page (string-to-int (or (elnode-http-param httpcon "page") "")))
+        (commits-per-page 10))
+   (elnode-send-html
+    httpcon
+    (pp-esxml-to-xml
+     `(html ()
+            (body ()
+                  ,(esxml-listify
+                    (mapcar
+                     (lambda (commit)
+                       (kvmap-bind (class &rest field)
+                           `(div ((class . ,(symbol-name class)))
+                                 ,(if (string= "hash" class)
+                                      (esxml-link (concat "?rev=" field)
+                                                  field)
+                                    field))
+                         commit))
+                     (elwiki/commit-log wikipage
+                                        commits-per-page
+                                        (* page commits-per-page))))))))))
 
 (defun elwiki/text-param (httpcon)
   "Get the text parameter from HTTPCON and convert the line endings."
