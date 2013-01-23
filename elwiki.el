@@ -78,32 +78,33 @@ slash.  In most cases, the file should be in \"/static/\"."
   :type '(file)
   :group 'elwiki)
 
+(defun elwiki/page-name (path)
+  "Return the name of the wikipage at PATH."
+  (file-name-sans-extension
+   (file-name-nondirectory path)))
+
 (defun* elwiki/render-page (httpcon wikipage pageinfo &key pre post)
   "Creole render a WIKIPAGE back to the HTTPCON.
 
 PRE and POST are put before and after the rendered WIKIPAGE,
 verbatim."
-  (let ((page-name (or pageinfo
-                       (file-name-sans-extension
-                        (file-name-nondirectory wikipage))))
+  (let ((page-name (if pageinfo
+                       (elwiki/page-name pageinfo)
+                     (elwiki/page-name wikipage)))
         (wiki-header-file (concat (file-name-as-directory elwiki-wikiroot)
                                        "/wiki/__header.creole"))
         (wiki-footer-file (concat (file-name-as-directory elwiki-wikiroot)
                                        "/wiki/__footer.creole")))
-   (elnode-http-send-string httpcon "<html>\n<head>")
-   ;; Link stylesheet.
+   (elnode-http-send-string httpcon "<html>")
+   ;; Document head
    (elnode-http-send-string
     httpcon
     (esxml-to-xml
-     `(link ((type . "text/css")
-             (rel . "stylesheet")
-             (href . ,elwiki-global-stylesheet)))))
-   ;; Document title.
-   (elnode-http-send-string
-    httpcon
-    (esxml-to-xml
-     `(title () ,(format "%s: %s" elwiki-wiki-name page-name))))
-   (elnode-http-send-string httpcon "</head>\n<body>\n")
+     (esxml-head (format "%s: %s" elwiki-wiki-name page-name)
+       (link 'stylesheet
+             "text/css"
+             elwiki-global-stylesheet))))
+   (elnode-http-send-string httpcon "<body>")
    ;; Site-wide header.
    (when (file-exists-p wiki-header-file)
      (elnode-http-send-string
@@ -167,6 +168,7 @@ verbatim."
   "Return an editor for WIKIPAGE via HTTPCON."
   (elnode-http-start httpcon 200 '("Content-type" . "text/html"))
   (let* ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
+         (page-name (elwiki/page-name page-info))
          (comment (elnode-http-param httpcon "comment"))
          (username (elnode-http-param httpcon "username"))
          (editor
@@ -209,10 +211,10 @@ verbatim."
        httpcon
        (esxml-to-xml
         `(html ()
-               (head ()
-                     (link ((type . "text/css")
-                            (rel . "stylesheet")
-                            (href . ,elwiki-global-stylesheet))))
+               ,(esxml-head (format "%s: editing %s" elwiki-wiki-name page-name)
+                  (link 'stylesheet
+                        "text/css"
+                        elwiki-global-stylesheet))
                (body ()
                      ,editor)))))))
 
