@@ -1,6 +1,6 @@
 = Elwiki =
 
-{{/static/emacs.png}}
+{{/static/elnode-wiki-logo.png}}
 
 This is an example page showing off Elwiki.  It is based on the {{{creole}}} wiki language and is written completely in Emacs Lisp.
 
