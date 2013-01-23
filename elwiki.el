@@ -167,17 +167,17 @@ verbatim."
 (defun elwiki-edit-page (httpcon wikipage &optional pageinfo preview)
   "Return an editor for WIKIPAGE via HTTPCON."
   (elnode-http-start httpcon 200 '("Content-type" . "text/html"))
-  (let* ((page-info (or pageinfo (elnode-http-pathinfo httpcon)))
-         (page-name (elwiki/page-name page-info))
+  (let* ((pageinfo (or pageinfo (elnode-http-pathinfo httpcon)))
+         (page-name (elwiki/page-name pageinfo))
          (comment (elnode-http-param httpcon "comment"))
          (username (elnode-http-param httpcon "username"))
          (editor
           (esxml-to-xml
            `(form
-             ((action . ,(format "%s?action=edit" page-info))
+             ((action . ,(format "%s?action=edit" pageinfo))
               (method . "POST"))
              (fieldset ()
-                       (legend () ,(format "Edit %s" (file-name-nondirectory page-info)))
+                       (legend () ,(format "Edit %s" (file-name-nondirectory pageinfo)))
                        (textarea ((cols . "80")
                                   (rows . "20")
                                   (name . "wikitext"))
@@ -205,7 +205,7 @@ verbatim."
         (elwiki/render-page
          httpcon
          wikipage
-         page-info
+         pageinfo
          :post (format "<div id=editor>%s</div>" editor))
       (elnode-send-html
        httpcon
