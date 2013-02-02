@@ -81,3 +81,7 @@ and lisp callouts:
 )>>
 
 There is more to do with the Elnode Wiki server because there is so much that Emacs can do.
+
+----
+
+This example creole file is part of Elwiki, © Nic Ferrier and Aidan Gauland, and is available under the AGPLv3+ (see the file {{{COPYING.txt}}} included with this package for details).
