@@ -1,13 +1,14 @@
-All source code files licensed under the AGPLv3; see agpl3.txt
+All source code files licensed under the AGPLv3+; see agpl3.txt
 
 The cloud gnus image file, static/cloud-gnus.png is by Nic Ferrier
 <nic@ferrier.me.uk> and is part of Elnode, which is licensed under the
-GPLv2 <https://github.com/nicferrier/elnode/blob/master/COPYING>.
+GPLv3+ <https://github.com/nicferrier/elnode/blob/master/COPYING>.
 
-The example wiki page, example.creole, is so trivial that it is
-provided with no strings attached — not even the defaults applied by
-copyright law, such as attribution — for anyone to play with, munge,
-mangle, tweak, redistribute, parse, process, twist, chop, dissect,
-flay, eviscerate, cite, reference, transpose, deface, serve, transfer,
-study, digest, or do absolutely anything with, except for use as
-political propaganda on Sundays.
+The example wiki page, example.creole, and the default CSS file,
+style.css, are so trivial that they are provided with no strings
+attached — not even the defaults applied by copyright law, such as
+attribution — for anyone to play with, munge, mangle, tweak,
+redistribute, parse, process, twist, chop, dissect, flay, eviscerate,
+cite, reference, transpose, deface, serve, transfer, study, digest, or
+do absolutely anything with, except for use as political propaganda on
+Sundays.
