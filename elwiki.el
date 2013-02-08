@@ -182,9 +182,11 @@ verbatim."
                        (textarea ((cols . "80")
                                   (rows . "20")
                                   (name . "wikitext"))
-                                 ,(with-temp-buffer
-                                    (insert-file-contents wikipage)
-                                    (buffer-string)))
+                                 ,(if (file-exists-p wikipage)
+                                      (with-temp-buffer
+                                        (insert-file-contents wikipage)
+                                        (buffer-string))
+                                    ""))
                        (br ())
                        (label () "Edit comment:"
                               (input ((type . "text")
@@ -267,6 +269,14 @@ verbatim."
       (elwiki/commit-page file-name username comment)
       (elnode-send-redirect httpcon path))))
 
+(defun elwiki/page-not-found (httpcon target-file action)
+  "Page Not Found (404) response handler for wiki pages."
+  (if (eq 'edit action)
+      (elwiki-edit-page httpcon target-file)
+    (elnode-send-404 httpcon
+      (esxml-to-xml "The page you requested does not exist.
+You can <a href=\"?action=edit\">create it</a> if you wish."))))
+
 (defun elwiki/router (httpcon)
   "Dispatch to a handler depending on the URL.
 
@@ -292,7 +302,9 @@ security is used."
         (action (intern (or (elnode-http-param httpcon "action")
                             "none"))))
    (flet ((elnode-http-mapping (httpcon which)
-            (concat targetfile ".creole")))
+            (concat targetfile ".creole"))
+          (elnode-not-found (httpcon target-file)
+            (elwiki/page-not-found httpcon target-file action)))
      (elnode-method httpcon
        (GET
         (elnode-docroot-for (concat elwiki-wikiroot "/wiki/")
