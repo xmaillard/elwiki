@@ -159,10 +159,9 @@ verbatim."
          (or page-buffer wikipage)
          pageinfo
          :post (pp-esxml-to-xml
-                  `(div ((class . "actions"))
-                        ,(esxml-link "?action=edit" "Edit this page")
-                        ,(esxml-link "?action=history" "View page history"))))))
-
+                `(div ((class . "actions"))
+                      ,(esxml-link "?action=edit" "Edit this page")
+                      ,(esxml-link "?action=history" "View page history"))))))
     (when page-buffer
       (kill-buffer page-buffer))))
 
