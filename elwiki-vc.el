@@ -41,6 +41,14 @@
 
 ;;; Code:
 
+(defun elwiki/log->alist (commit-log)
+  "Generate an alist from a commit-log line."
+  (mapcar*
+   (lambda (k v)
+     (cons k (htmlize-protect-string v)))
+   '(hash date author subject)
+   (split-string commit-log "\0")))
+
 (defun elwiki/commit-log (file number-of-commits skip-commits)
   "Get the last NUMBER-OF-COMMITS commits of FILE.
 
@@ -53,16 +61,10 @@ Reurns a list of commits as alists of the form
    (date . \"yyyy-dd-mm hh:mm:ss +TZ\")
    (author . \"John Smith\")
    (subject . \"commit subject line\"))"
- ;; Get the date, author and subject
- ;; (delimited by null) of the next n
- ;; commits.
+  ;; Get the date, author and subject, delimited by the null
+  ;; character, of the next n commits.
   (mapcar
-   (lambda (commit)
-    (mapcar*
-     (lambda (k v)
-       (cons k (htmlize-protect-string v)))
-     '(hash date author subject)
-     (split-string commit "\000")))
+   'elwiki/log->alist
    (split-string
     (let ((default-directory (file-name-directory file)))
       (shell-command-to-string
