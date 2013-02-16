@@ -89,7 +89,9 @@ Sends a list of commits as alists of the form
    (date . \"yyyy-dd-mm hh:mm:ss +TZ\")
    (author . \"John Smith\")
    (subject . \"commit subject line\"))
-to *Messages*."
+to *Messages*.
+
+Returns the git process."
   ;; Get the date, author and subject, delimited by the null
   ;; character, of the next n commits.
   (let ((default-directory (file-name-directory file))
@@ -101,7 +103,8 @@ to *Messages*."
           (format "-%d" number-of-commits)
           "--pretty=tformat:%h%x00%ci%x00%an%x00%s" file)))
     (set-process-filter git-log-process 'elwiki/log-filter)
-    (set-process-sentinel git-log-process 'elwiki/log-sentinel)))
+    (set-process-sentinel git-log-process 'elwiki/log-sentinel)
+    git-log-process))
 
 (defun elwiki/commit-page (file username comment)
   "Commit any changes to FILE.
