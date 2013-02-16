@@ -85,6 +85,32 @@ slash.  In most cases, the file should be in \"/static/\"."
   (file-name-sans-extension
    (file-name-nondirectory path)))
 
+(defun elwiki/send-site-header-or-footer (httpcon header-or-footer)
+  "Render the site-wide creole header or footer to HTTPCON.
+
+HEADER-OR-FOOTER must be either 'header or 'footer (specifying
+which one of the header and footer files to send), otherwise an
+error is raised.
+
+If the header or footer file does not exist, nothing is sent via
+HTTPCON."
+
+  (when (not (and (symbolp header-or-footer)
+                  (member header-or-footer '(header footer))))
+    (error "Expected 'header or 'footer for second argument, got %S" header-or-footer))
+  (let ((wiki-header-or-footer-file (format "%s/wiki/__%s.creole"
+                                            (file-name-as-directory elwiki-wikiroot)
+                                            (symbol-name header-or-footer))))
+    (when (file-exists-p wiki-header-or-footer-file)
+      (elnode-http-send-string
+       httpcon
+       (with-temp-buffer
+         (insert-file-contents wiki-header-or-footer-file)
+         (with-current-buffer
+             (creole-html (current-buffer) nil
+                          :do-font-lock t)
+           (buffer-string)))))))
+
 (defun* elwiki/render-page (httpcon wikipage pageinfo &key pre post)
   "Creole render a WIKIPAGE back to the HTTPCON.
 
@@ -108,15 +134,7 @@ verbatim."
              elwiki-global-stylesheet))))
    (elnode-http-send-string httpcon "<body>")
    ;; Site-wide header.
-   (when (file-exists-p wiki-header-file)
-     (elnode-http-send-string
-      httpcon
-      (with-temp-buffer
-        (insert-file-contents wiki-header-file)
-        (with-current-buffer
-            (creole-html (current-buffer) nil
-                         :do-font-lock t)
-          (buffer-string)))))
+   (elwiki/send-site-header-or-footer httpcon 'header)
    ;; Argument-passed header.
    (when pre
      (elnode-http-send-string httpcon pre))
@@ -133,15 +151,7 @@ verbatim."
    (when post
      (elnode-http-send-string httpcon post))
    ;; Site-wide footer.
-   (when (file-exists-p wiki-footer-file)
-     (elnode-http-send-string
-      httpcon
-      (with-temp-buffer
-        (insert-file-contents wiki-footer-file)
-        (with-current-buffer
-            (creole-html (current-buffer) nil
-                         :do-font-lock t)
-          (buffer-string)))))
+   (elwiki/send-site-header-or-footer httpcon 'footer)
    (elnode-http-return httpcon "</body>\n</html>")))
 
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
