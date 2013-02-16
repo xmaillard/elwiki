@@ -84,23 +84,24 @@ Skips the first SKIP-COMMITS commits.
 
 Any HTML in the fields is escaped.
 
-Reurns a list of commits as alists of the form
+Sends a list of commits as alists of the form
   ((hash . xxxxxxx)
    (date . \"yyyy-dd-mm hh:mm:ss +TZ\")
    (author . \"John Smith\")
-   (subject . \"commit subject line\"))"
+   (subject . \"commit subject line\"))
+to *Messages*."
   ;; Get the date, author and subject, delimited by the null
   ;; character, of the next n commits.
-  (mapcar
-   'elwiki/log->alist
-   (split-string
-    (let ((default-directory (file-name-directory file)))
-      (shell-command-to-string
-       (format "git log --skip=%d -%d --pretty=format:%%h%%x00%%ci%%x00%%an%%x00%%s %s"
-               skip-commits
-               number-of-commits
-               file)))
-    "\n")))
+  (let ((default-directory (file-name-directory file))
+        (git-log-process
+         (start-process
+          "git-log" (generate-new-buffer-name "*git-log*")
+          "git" "log"
+          (format "--skip=%d" skip-commits)
+          (format "-%d" number-of-commits)
+          "--pretty=tformat:%h%x00%ci%x00%an%x00%s" file)))
+    (set-process-filter git-log-process 'elwiki/log-filter)
+    (set-process-sentinel git-log-process 'elwiki/log-sentinel)))
 
 (defun elwiki/commit-page (file username comment)
   "Commit any changes to FILE.
