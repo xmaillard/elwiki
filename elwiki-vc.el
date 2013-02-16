@@ -41,6 +41,34 @@
 
 ;;; Code:
 
+(require 'htmlize)
+
+(defun elwiki/log-filter (process output)
+  "Filter function for git-log process."
+  (when (buffer-live-p (process-buffer process))
+    (with-current-buffer (process-buffer process)
+      (save-excursion
+        (goto-char (process-mark process))
+        (insert output)
+        (set-marker (process-mark process) (point))
+        ;; Sent all complete lines, passing them through
+        ;; `elwiki/log->alist'.
+        (goto-char (point-min))
+        (while (search-forward "\n" nil t nil)
+          (message "Received from git log: %S"
+                   (elwiki/log->alist
+                    (delete-and-extract-region (point-min) (1- (point)))))
+          ;; Delete the trailing newline.
+          (delete-char -1))))))
+
+(defun elwiki/log-sentinel (process event)
+  (if (string= "finished\n" event)
+      ;; Finish the page and connection, and clean up if the process
+      ;; exited without error.
+      (kill-buffer (process-buffer process))
+    ;; Send an error message if it didn't .
+    (message "An error occurred while retrieving the file history.")))
+
 (defun elwiki/log->alist (commit-log)
   "Generate an alist from a commit-log line."
   (mapcar*
