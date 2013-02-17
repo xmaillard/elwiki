@@ -86,7 +86,7 @@ OUT-STREAM is where to send the log output, see
         ;; possibly we have a race condition here
         (elwiki/out->stream out-stream :eof)
         (kill-buffer (process-buffer process)))
-      ;; Send an error message if it didn't .
+      ;; Send an error message if it didn't.
       (message "An error occurred while retrieving the file history.")))
 
 (defun elwiki/log->alist (commit-log)
@@ -107,7 +107,7 @@ Any HTML in the fields is escaped.
 
 Sends a list of commits as alists of the form
 
-  ((hash . xxxxxxx)
+  ((hash . \"xxxxxxx\")
    (date . \"yyyy-dd-mm hh:mm:ss +TZ\")
    (author . \"John Smith\")
    (subject . \"commit subject line\"))
