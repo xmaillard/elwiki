@@ -43,8 +43,20 @@
 
 (require 'htmlize)
 
-(defun elwiki/log-filter (process output)
-  "Filter function for git-log process."
+(defun elwiki/out->stream (out-stream output)
+  "Deal with the decision logic for an OUT-STREAM."
+  (cond
+    ((functionp out-stream)
+     (funcall out-stream output))
+    ;; This should cover all the other cases?
+    ((not (eq output :eof))
+     (print output out-stream))))
+
+(defun elwiki/log-filter (process output &optional out-stream)
+  "Filter function for git-log process.
+
+OUT-STREAM is where to send the log output, see
+`elwiki/commit-log' for more details."
   (when (buffer-live-p (process-buffer process))
     (with-current-buffer (process-buffer process)
       (save-excursion
@@ -55,19 +67,27 @@
         ;; `elwiki/log->alist'.
         (goto-char (point-min))
         (while (search-forward "\n" nil t nil)
-          (message "Received from git log: %S"
-                   (elwiki/log->alist
-                    (delete-and-extract-region (point-min) (1- (point)))))
+          (elwiki/out->stream
+           out-stream
+           (elwiki/log->alist
+            (delete-and-extract-region (point-min) (1- (point)))))
           ;; Delete the trailing newline.
           (delete-char -1))))))
 
-(defun elwiki/log-sentinel (process event)
+(defun elwiki/log-sentinel (process event &optional out-stream)
+  "Sentinel for git-log.
+
+OUT-STREAM is where to send the log output, see
+`elwiki/commit-log' for more details."
   (if (string= "finished\n" event)
       ;; Finish the page and connection, and clean up if the process
       ;; exited without error.
-      (kill-buffer (process-buffer process))
-    ;; Send an error message if it didn't .
-    (message "An error occurred while retrieving the file history.")))
+      (progn
+        ;; possibly we have a race condition here
+        (elwiki/out->stream out-stream :eof)
+        (kill-buffer (process-buffer process)))
+      ;; Send an error message if it didn't .
+      (message "An error occurred while retrieving the file history.")))
 
 (defun elwiki/log->alist (commit-log)
   "Generate an alist from a commit-log line."
@@ -77,7 +97,8 @@
    '(hash date author subject)
    (split-string commit-log "\0")))
 
-(defun elwiki/commit-log (file number-of-commits skip-commits)
+(defun elwiki/commit-log (file number-of-commits skip-commits
+                          &optional out-stream)
   "Get the last NUMBER-OF-COMMITS commits of FILE.
 
 Skips the first SKIP-COMMITS commits.
@@ -85,11 +106,19 @@ Skips the first SKIP-COMMITS commits.
 Any HTML in the fields is escaped.
 
 Sends a list of commits as alists of the form
+
   ((hash . xxxxxxx)
    (date . \"yyyy-dd-mm hh:mm:ss +TZ\")
    (author . \"John Smith\")
    (subject . \"commit subject line\"))
-to *Messages*.
+
+to OUT-STREAM.
+
+OUT-STREAM is an optional destination for the commit-logs, this can
+be a buffer or a function or `nil' or `t'.  If a function it is
+called with a single argument which is either string data or the
+symbol `:eof' when the log ends.  If OUTPUT is nil or `t' then
+the log is sent to the default output stream.
 
 Returns the git process."
   ;; Get the date, author and subject, delimited by the null
@@ -105,6 +134,18 @@ Returns the git process."
     (set-process-filter git-log-process 'elwiki/log-filter)
     (set-process-sentinel git-log-process 'elwiki/log-sentinel)
     git-log-process))
+
+(defun elwiki/http-commit-log (httpcon)
+  (let (file number-of-commits skip-commits) ; come from httpcon somehow?
+    (process-put
+     httpcon :elnode-child-process
+     (elwiki/commit-log
+      file number-of-commits skip-commits
+      (lambda (data)
+        (if (eq data :eof)
+            (elnode-http-return httpcon)
+            ;; Else send the data
+            (elnode-http-send-string httpcon data)))))))
 
 (defun elwiki/commit-page (file username comment)
   "Commit any changes to FILE.
