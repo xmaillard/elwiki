@@ -131,8 +131,14 @@ Returns the git process."
           (format "--skip=%d" skip-commits)
           (format "-%d" number-of-commits)
           "--pretty=tformat:%h%x00%ci%x00%an%x00%s" file)))
-    (set-process-filter git-log-process 'elwiki/log-filter)
-    (set-process-sentinel git-log-process 'elwiki/log-sentinel)
+    (set-process-filter
+     git-log-process
+     (lambda (proc data)
+       (elwiki/log-filter proc data out-stream)))
+    (set-process-sentinel
+     git-log-process
+     (lambda (proc status)
+       (elwiki/log-sentinel proc status out-stream)))
     git-log-process))
 
 (defun elwiki/http-commit-log (httpcon)
