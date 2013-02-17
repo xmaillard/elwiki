@@ -52,6 +52,27 @@
     ((not (eq output :eof))
      (print output out-stream))))
 
+(defun elwiki/log->alist (commit-log)
+  "Generate an alist from a commit-log line."
+  (mapcar*
+   (lambda (k v)
+     (cons k (htmlize-protect-string v)))
+   '(hash date author subject)
+   (split-string commit-log "\0")))
+
+(defun elwiki/log-alist->esxml (commit-log)
+  "Transform an alist commit log to ESXML.
+
+Expects input to be the output of `elwiki/log->alist'."
+  `(li ()
+    ,@(kvmap-bind (class &rest field)
+         `(span ((class . ,(symbol-name class)))
+                ,(if (string= "hash" class)
+                     (esxml-link (concat "?rev=" field)
+                                 field)
+                   field))
+       commit-log)))
+
 (defun elwiki/log-filter (process output &optional out-stream)
   "Filter function for git-log process.
 
@@ -88,14 +109,6 @@ OUT-STREAM is where to send the log output, see
         (kill-buffer (process-buffer process)))
       ;; Send an error message if it didn't.
       (message "An error occurred while retrieving the file history.")))
-
-(defun elwiki/log->alist (commit-log)
-  "Generate an alist from a commit-log line."
-  (mapcar*
-   (lambda (k v)
-     (cons k (htmlize-protect-string v)))
-   '(hash date author subject)
-   (split-string commit-log "\0")))
 
 (defun elwiki/commit-log (file number-of-commits skip-commits
                           &optional out-stream)
