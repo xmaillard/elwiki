@@ -42,6 +42,7 @@
 ;;; Code:
 
 (require 'htmlize)
+(require 'esxml)
 
 (defun elwiki/out->stream (out-stream output)
   "Deal with the decision logic for an OUT-STREAM."
@@ -73,7 +74,7 @@ Expects input to be the output of `elwiki/log->alist'."
                    field))
        commit-log)))
 
-(defun elwiki/log-filter (process output &optional out-stream)
+(defun elwiki/log-filter (process output out-stream)
   "Filter function for git-log process.
 
 OUT-STREAM is where to send the log output, see
@@ -97,7 +98,7 @@ OUT-STREAM is where to send the log output, see
           ;; Delete the trailing newline.
           (delete-char -1))))))
 
-(defun elwiki/log-sentinel (process event &optional out-stream)
+(defun elwiki/log-sentinel (process event out-stream)
   "Sentinel for git-log.
 
 OUT-STREAM is where to send the log output, see
@@ -113,8 +114,8 @@ OUT-STREAM is where to send the log output, see
       ;; Send an error message if it didn't.
       (message "An error occurred while retrieving the file history.")))
 
-(defun elwiki/commit-log (file number-of-commits skip-commits
-                          &optional out-stream)
+(defun* elwiki/commit-log (file number-of-commits skip-commits
+                          &optional (out-stream t))
   "Get the last NUMBER-OF-COMMITS commits of FILE.
 
 Skips the first SKIP-COMMITS commits.
