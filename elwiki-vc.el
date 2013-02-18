@@ -90,8 +90,10 @@ OUT-STREAM is where to send the log output, see
         (while (search-forward "\n" nil t nil)
           (elwiki/out->stream
            out-stream
-           (elwiki/log->alist
-            (delete-and-extract-region (point-min) (1- (point)))))
+           (esxml-to-xml
+            (elwiki/log-alist->esxml
+             (elwiki/log->alist
+              (delete-and-extract-region (point-min) (1- (point)))))))
           ;; Delete the trailing newline.
           (delete-char -1))))))
 
@@ -106,7 +108,8 @@ OUT-STREAM is where to send the log output, see
       (progn
         ;; possibly we have a race condition here
         (elwiki/out->stream out-stream :eof)
-        (kill-buffer (process-buffer process)))
+        (kill-buffer (process-buffer process))
+        (elnode-http-send-string httpcon "</ul></body></html>"))
       ;; Send an error message if it didn't.
       (message "An error occurred while retrieving the file history.")))
 
@@ -154,17 +157,22 @@ Returns the git process."
        (elwiki/log-sentinel proc status out-stream)))
     git-log-process))
 
-(defun elwiki/http-commit-log (httpcon)
-  (let (file number-of-commits skip-commits) ; come from httpcon somehow?
+(defun elwiki/http-commit-log (httpcon wikipage)
+  (let* ((page (string-to-int (or (elnode-http-param httpcon "page") "")))
+         (number-of-commits (string-to-int
+                             (or (elnode-http-param httpcon "commits")
+                                 "10"))) ; Default to 10.
+         (skip-commits (* page number-of-commits)))
+    (elnode-http-send-string httpcon "<html><body><ul>")
     (process-put
      httpcon :elnode-child-process
      (elwiki/commit-log
-      file number-of-commits skip-commits
+      wikipage number-of-commits skip-commits
       (lambda (data)
         (if (eq data :eof)
             (elnode-http-return httpcon)
-            ;; Else send the data
-            (elnode-http-send-string httpcon data)))))))
+          ;; Else send the data
+          (elnode-http-send-string httpcon data)))))))
 
 (defun elwiki/commit-page (file username comment)
   "Commit any changes to FILE.
