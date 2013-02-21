@@ -108,9 +108,9 @@ OUT-STREAM is where to send the log output, see
       ;; exited without error.
       (progn
         ;; possibly we have a race condition here
+        (elwiki/out->stream out-stream "</ul></body></html>")
         (elwiki/out->stream out-stream :eof)
-        (kill-buffer (process-buffer process))
-        (elnode-http-send-string httpcon "</ul></body></html>"))
+        (kill-buffer (process-buffer process)))
       ;; Send an error message if it didn't.
       (message "An error occurred while retrieving the file history.")))
 
@@ -156,6 +156,7 @@ Returns the git process."
      git-log-process
      (lambda (proc status)
        (elwiki/log-sentinel proc status out-stream)))
+    (elwiki/out->stream out-stream "<html><body><ul>")
     git-log-process))
 
 (defun elwiki/http-commit-log (httpcon wikipage)
@@ -164,7 +165,6 @@ Returns the git process."
                              (or (elnode-http-param httpcon "commits")
                                  "10"))) ; Default to 10.
          (skip-commits (* page number-of-commits)))
-    (elnode-http-send-string httpcon "<html><body><ul>")
     (process-put
      httpcon :elnode-child-process
      (elwiki/commit-log
