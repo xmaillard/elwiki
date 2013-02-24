@@ -32,6 +32,8 @@
 
 ;;; Code:
 
+(require 'ert)
+
 (ert-deftest elwiki-page ()
   "Full stack Wiki test."
   (with-elnode-mock-server
