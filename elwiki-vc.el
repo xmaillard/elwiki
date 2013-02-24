@@ -61,8 +61,8 @@ Reurns a list of commits as alists of the form
    (date . \"yyyy-dd-mm hh:mm:ss +TZ\")
    (author . \"John Smith\")
    (subject . \"commit subject line\"))"
-  ;; Get the date, author and subject, delimited by the null
-  ;; character, of the next n commits.
+  ;; Get the date, author and subject, delimited by the NUL character,
+  ;; of the next n commits.
   (mapcar
    'elwiki/log->alist
    (split-string
