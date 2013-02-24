@@ -34,7 +34,7 @@
 
 (require 'ert)
 
-(ert-deftest log->alist-test ()
+(ert-deftest elwiki/log->alist ()
   "Test `elwiki/log->alist'."
   (should (equal
            '((hash . "xxxxxxx")
