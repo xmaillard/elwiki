@@ -49,7 +49,7 @@
         (let ((elwiki-wikiroot "/home/elnode/wiki"))
           (elnode-hostpath-dispatcher
            httpcon
-           '(("[^/]*//wiki/\\(.*\\)" . elwiki))))) t
+           '(("[^/]*//wiki/\\(.*\\)" . elwiki/handler))))) t
     (fakir-mock-file (fakir-file
                       :filename "test.creole"
                       :directory "/home/elnode/wiki"
