@@ -52,6 +52,21 @@
              "/path/to/wikiroot/wiki/"
              (elwiki/wiki-directory)))))
 
+(ert-deftest elwiki/header-footer ()
+  "Test `elwiki/send-site-header-or-footer'."
+  (should-error (elwiki/site-header-or-footer 'invalid))
+  (should-error (elwiki/site-header-or-footer nil))
+  (should-error (elwiki/site-header-or-footer t))
+  (let ((elwiki-wikiroot "/path/to/wikiroot/"))
+   (fakir-mock-file
+     (fakir-file
+      :filename "__header.creole"
+      :directory "/path/to/wikiroot/wiki"
+      :content "ERT header file\n")
+     (should (string=
+              "ERT header file\n"
+              (elwiki/site-header-or-footer 'header))))))
+
 (ert-deftest elwiki-page ()
   "Full stack Wiki test."
   (with-elnode-mock-server
