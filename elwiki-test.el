@@ -54,10 +54,17 @@
 
 (ert-deftest elwiki/header-footer ()
   "Test `elwiki/send-site-header-or-footer'."
+  ;; Should only accept 'header and 'footer.
   (should-error (elwiki/site-header-or-footer 'invalid))
   (should-error (elwiki/site-header-or-footer nil))
   (should-error (elwiki/site-header-or-footer t))
   (let ((elwiki-wikiroot "/path/to/wikiroot/"))
+    ;; Should return nil if the file doesn't exist.
+    (should (eq nil
+                (elwiki/site-header-or-footer 'header)))
+    (should (eq nil
+                (elwiki/site-header-or-footer 'footer)))
+    ;; Should return the file if it exists (tested with a mock file).
    (fakir-mock-file
      (fakir-file
       :filename "__header.creole"
