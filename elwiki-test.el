@@ -41,6 +41,17 @@
   (should (string= "pagename"
                    (elwiki/page-name "pagename.creole"))))
 
+(ert-deftest elwiki/wiki-dir ()
+  "Test `elwiki/wiki-dir'."
+  (let ((elwiki-wikiroot "/path/to/wikiroot/"))
+    (should (string=
+             "/path/to/wikiroot/wiki/"
+             (elwiki/wiki-directory))))
+  (let ((elwiki-wikiroot "/path/to/wikiroot"))
+    (should (string=
+             "/path/to/wikiroot/wiki/"
+             (elwiki/wiki-directory)))))
+
 (ert-deftest elwiki-page ()
   "Full stack Wiki test."
   (with-elnode-mock-server
