@@ -66,12 +66,13 @@
                 (elwiki/site-header-or-footer 'footer)))
     ;; Should return the file if it exists (tested with a mock file).
    (fakir-mock-file
-     (fakir-file
-      :filename "__header.creole"
-      :directory "/path/to/wikiroot/wiki"
-      :content "ERT header file\n")
+       (fakir-file
+        :filename "__header.creole"
+        :directory "/path/to/wikiroot/wiki"
+        :content "ERT header file\n")
+     (should (file-exists-p "/path/to/wikiroot/wiki/__header.creole"))
      (should (string=
-              "ERT header file\n"
+              "<p>ERT header file</p>\n" ;
               (elwiki/site-header-or-footer 'header))))))
 
 (ert-deftest elwiki-page ()
