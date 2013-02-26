@@ -124,11 +124,7 @@ PRE and POST are put before and after the rendered WIKIPAGE,
 verbatim."
   (let ((page-name (if pageinfo
                        (elwiki/page-name pageinfo)
-                     (elwiki/page-name wikipage)))
-        (wiki-header-file (concat (file-name-as-directory elwiki-wikiroot)
-                                       "/wiki/__header.creole"))
-        (wiki-footer-file (concat (file-name-as-directory elwiki-wikiroot)
-                                       "/wiki/__footer.creole")))
+                     (elwiki/page-name wikipage))))
    (elnode-http-send-string httpcon "<html>")
    ;; Document head
    (elnode-http-send-string
@@ -140,7 +136,7 @@ verbatim."
              elwiki-global-stylesheet))))
    (elnode-http-send-string httpcon "<body>")
    ;; Site-wide header.
-   (elnode-http-send-string httpcon (elwiki/site-header-or-footer 'header))
+   (elnode-http-send-string httpcon (or (elwiki/site-header-or-footer 'header) ""))
    ;; Argument-passed header.
    (when pre
      (elnode-http-send-string httpcon pre))
@@ -157,7 +153,7 @@ verbatim."
    (when post
      (elnode-http-send-string httpcon post))
    ;; Site-wide footer.
-   (elnode-http-send-string httpcon (elwiki/site-header-or-footer 'footer))
+   (elnode-http-send-string httpcon (or (elwiki/site-header-or-footer 'footer) ""))
    (elnode-http-return httpcon "</body>\n</html>")))
 
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
