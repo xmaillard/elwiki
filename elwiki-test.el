@@ -72,7 +72,7 @@
         :content "ERT header file\n")
      (should (file-exists-p "/path/to/wikiroot/wiki/__header.creole"))
      (should (string=
-              "<p>ERT header file</p>\n" ;
+              "<p>ERT header file</p>\n"
               (elwiki/site-header-or-footer 'header))))))
 
 (ert-deftest elwiki-page ()
