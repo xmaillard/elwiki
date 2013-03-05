@@ -75,6 +75,25 @@
               "<p>ERT header file</p>\n"
               (elwiki/site-header-or-footer 'header))))))
 
+(ert-deftest elwiki/render-page ()
+  "Test `elwiki/render-page'."
+  (fakir-mock-process :httpcon ()
+    (let ((elwiki-wikiroot "/path/to/wikiroot/")
+          (test-file-contents "= Text page =\Nthis is a test wiki page\n"))
+      (fakir-mock-file
+          (fakir-file
+           :filename "test.creole"
+           :directory "/path/to/wikiroot/wiki/"
+           :content test-file-contents)
+        (elwiki/render-page
+         :httpcon
+         "/path/to/wikiroot/wiki/text.creole"
+         nil))
+      (should (string=
+               test-file-contents
+               (with-current-buffer (process-buffer :httpcon)
+                 (buffer-string)))))))
+
 (ert-deftest elwiki-page ()
   "Full stack Wiki test."
   (with-elnode-mock-server
