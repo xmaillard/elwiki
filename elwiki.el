@@ -144,14 +144,14 @@ verbatim."
    (when pre
      (elnode-http-send-string httpcon pre))
    ;; Rendered creole page.
-   (elnode-http-send-string
-    httpcon
-    (with-temp-buffer
-      (insert-file-contents wikipage)
-      (with-current-buffer
-          (creole-html (current-buffer) nil
-                       :do-font-lock t)
-        (buffer-string))))
+   (let* ((htmlbuf (generate-new-buffer "*elwiki-html*"))
+          (creole-oddmuse-on t)
+          (text
+           (with-current-buffer (find-file-noselect wikipage)
+             (creole-html (current-buffer) htmlbuf :do-font-lock t)
+             (with-current-buffer htmlbuf
+               (buffer-substring-no-properties (point-min) (point-max))))))
+     (elnode-http-send-string httpcon text))
    ;; Argument-passed footer.
    (when post
      (elnode-http-send-string httpcon post))
