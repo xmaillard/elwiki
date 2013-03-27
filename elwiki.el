@@ -289,17 +289,6 @@ verbatim."
       (esxml-to-xml "The page you requested does not exist.
 You can <a href=\"?action=edit\">create it</a> if you wish."))))
 
-(defun elwiki/router (httpcon)
-  "Dispatch to a handler depending on the URL.
-
-So, for example, a handler for wiki pages, a separate handler for
-images, and so on."
-  (let ((webserver (elnode-webserver-handler-maker
-                    (concat elwiki-dir "/static/"))))
-    (elnode-hostpath-dispatcher httpcon
-     `(("^[^/]*//wiki/\\(.*\\)" . elwiki/handler)
-       ("^[^/]*//static/\\(.*\\)$" . ,webserver)))))
-
 (defun elwiki/handler (httpcon)
   "A low level handler for wiki operations.
 
