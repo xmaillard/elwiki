@@ -337,6 +337,17 @@ security is used."
                 (insert text))
               (elwiki-edit-page httpcon preview-file-name path t))))))))))
 
+(defun elwiki/router (httpcon)
+  "Dispatch to a handler depending on the URL.
+
+So, for example, a handler for wiki pages, a separate handler for
+images, and so on."
+  (let ((webserver (elnode-webserver-handler-maker
+                    (concat elwiki-dir "/static/"))))
+    (elnode-hostpath-dispatcher httpcon
+     `(("^[^/]*//wiki/\\(.*\\)" . elwiki/handler)
+       ("^[^/]*//static/\\(.*\\)$" . ,webserver)))))
+
 ;;;###autoload
 (defun elwiki-server (httpcon)
   "Serve wiki pages from `elwiki-wikiroot'.
