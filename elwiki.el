@@ -308,13 +308,13 @@ security is used."
             (elwiki/page-not-found httpcon target-file action)))
      (elnode-method httpcon
        (GET
-        (elnode-docroot-for (concat elwiki-wikiroot "/wiki/")
+        (elnode-docroot-for elwiki-wikiroot
           with target-path
           on httpcon
           do
           (case action
             (none
-             (elwiki-page httpcon target-path))
+             (elwiki-page httpcon target-path targetfile))
             (edit
              (elwiki-edit-page httpcon target-path))
             (history
