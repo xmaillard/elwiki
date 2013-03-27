@@ -134,9 +134,12 @@ verbatim."
        (link 'stylesheet
              "text/css"
              elwiki-global-stylesheet))))
-   (elnode-http-send-string httpcon "<body>")
+   (elnode-http-send-string
+    httpcon
+    (format "<body><h1>%s</h1>" page-name))
    ;; Site-wide header.
-   (elnode-http-send-string httpcon (or (elwiki/site-header-or-footer 'header) ""))
+   (let ((hdr (elwiki/site-header-or-footer 'header)))
+     (when hdr (elnode-http-send-string httpcon hdr)))
    ;; Argument-passed header.
    (when pre
      (elnode-http-send-string httpcon pre))
