@@ -117,6 +117,15 @@ If the header or footer file does not exist, nil is returned."
                          :do-font-lock t)
           (buffer-string))))))
 
+(defun elwiki/get-page (wikipage &optional raw-p)
+  (let* ((htmlbuf (generate-new-buffer "*elwiki-html*"))
+         (creole-oddmuse-on t))
+    (with-current-buffer (find-file-noselect wikipage)
+      (unless raw-p
+        (creole-html (current-buffer) htmlbuf :do-font-lock t))
+      (with-current-buffer (if raw-p (current-buffer) htmlbuf)
+        (buffer-substring-no-properties (point-min) (point-max))))))
+
 (defun* elwiki/render-page (httpcon wikipage pageinfo &key pre post)
   "Creole render a WIKIPAGE back to the HTTPCON.
 
@@ -144,14 +153,7 @@ verbatim."
    (when pre
      (elnode-http-send-string httpcon pre))
    ;; Rendered creole page.
-   (let* ((htmlbuf (generate-new-buffer "*elwiki-html*"))
-          (creole-oddmuse-on t)
-          (text
-           (with-current-buffer (find-file-noselect wikipage)
-             (creole-html (current-buffer) htmlbuf :do-font-lock t)
-             (with-current-buffer htmlbuf
-               (buffer-substring-no-properties (point-min) (point-max))))))
-     (elnode-http-send-string httpcon text))
+   (elnode-http-send-string httpcon (elwiki/get-page wikipage))
    ;; Argument-passed footer.
    (when post
      (elnode-http-send-string httpcon post))
@@ -162,23 +164,30 @@ verbatim."
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
   "Creole render a WIKIPAGE back to the HTTPCON."
   (let* ((commit (elnode-http-param httpcon "rev"))
+         (raw-p (elnode-http-param httpcon "raw"))
          (page-buffer (when commit (elwiki/get-revision wikipage commit))))
     (if (and commit
              (not page-buffer))
         ;; A specific page revision was requested, but we failed to get it.
         (elnode-send-404 httpcon "No such page revision.")
-      (progn
-        (elnode-http-start
-         httpcon 200
-         '("Content-type" . "text/html; charset=utf-8"))
-        (elwiki/render-page
-         httpcon
-         (or page-buffer wikipage)
-         pageinfo
-         :post (pp-esxml-to-xml
-                `(div ((class . "actions"))
-                      ,(esxml-link "?action=edit" "Edit this page")
-                      ,(esxml-link "?action=history" "View page history"))))))
+        ;; Else
+        (if raw-p
+            (progn
+              (elnode-http-start
+               httpcon 200 '("content-type" . "text/plain; charset=utf-8"))
+              (elnode-http-return
+               httpcon (elwiki/get-page wikipage t)))
+            ;; Else send the HTML
+            (elnode-http-start
+             httpcon 200 `("content-type" . "text/html; charset=utf-8"))
+            (elwiki/render-page
+             httpcon
+             (or page-buffer wikipage)
+             pageinfo
+             :post (pp-esxml-to-xml
+                    `(div ((class . "actions"))
+                          ,(esxml-link "?action=edit" "Edit this page")
+                          ,(esxml-link "?action=history" "View page history"))))))
     (when page-buffer
       (kill-buffer page-buffer))))
 
