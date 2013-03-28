@@ -291,7 +291,8 @@ verbatim."
     (elnode-error "Saving page %s, edited by %s" page-name username)
     (with-current-buffer buffer
       (erase-buffer)
-      (insert text)
+      ;; We need to choose the coding system properly from the http header
+      (insert (decode-coding-string text 'utf-8))
       (save-buffer)
       (elwiki/commit-page file-name username comment)
       (elnode-send-redirect httpcon path))))
