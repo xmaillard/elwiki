@@ -279,13 +279,14 @@ verbatim."
 
 (defun elwiki/save-request (httpcon wikiroot path text)
   "Process a page-save request."
-  (let* ((page-name (save-match-data
-                      (string-match "/wiki/\\(.*\\)$" path)
-                      (match-string 1 path)))
+  (let* ((page-name (elnode-http-mapping httpcon 1))
          (comment (elnode-http-param httpcon "comment"))
          (username (elnode-http-param httpcon "username"))
-         (file-name (expand-file-name (concat (file-name-as-directory wikiroot)
-                                              path ".creole")))
+         ;; It would be better to use elnode-docroot-for with handling
+         ;; for new files
+         (file-name (expand-file-name
+                     (concat
+                      (file-name-as-directory wikiroot) page-name)))
          (buffer (find-file-noselect file-name)))
     (elnode-error "Saving page %s, edited by %s" page-name username)
     (with-current-buffer buffer
