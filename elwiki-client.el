@@ -20,24 +20,30 @@
 
 ;;; Commentary:
 
-;; 
+;; A very simple elwiki client for Emacs. Depends on creole-mode and
+;; emacs-web.
 
 ;;; Code:
 
 (require 'web)
+(require 'creole-mode)
 
-(defun elwikic (page-name)
+;;;###autoload
+(defun elwikic (page)
   (interactive "Mpage: ")
-  (let ((page page-name))
-    (web-http-get
-     (lambda (httpc hdr data)
-       (with-current-buffer (get-buffer-create (format "*wiki-%s*" page))
-         (goto-char (point-max))
-         (insert data)
-         (decode-coding-region (point-min) (point-max) 'utf-8)
-         (creole-mode)
-         (switch-to-buffer (current-buffer))))
-     :url (format "http://localhost:8019/wiki/%s?raw=t" page))))
+  (web-http-get
+   (lambda (httpc hdr data)
+     (with-current-buffer (get-buffer-create (format "*wiki-%s*" page))
+       (erase-buffer)
+       (goto-char (point-max))
+       (insert data)
+       (decode-coding-region (point-min) (point-max) 'utf-8)
+       (creole-mode)
+       (view-mode t)
+       (visual-line-mode t)
+       (goto-char (point-min))
+       (switch-to-buffer (current-buffer))))
+   :url (format "http://localhost:8019/wiki/%s?raw=t" page)))
 
 
 (provide 'elwiki-client)
