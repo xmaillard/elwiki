@@ -80,6 +80,17 @@ slash.  In most cases, the file should be in \"/static/\"."
   :type '(file)
   :group 'elwiki)
 
+(defun elwiki/link-resolver (short-link)
+  "Resolver for bare links in creole.
+
+Bound to `creole-link-resolver-fn' when calling elwikicreole to
+generate HTML from creole pages."
+  (cond
+   ((not (find ?. short-link)) ;; Only wiki page links have no extension.
+    (format "/wiki/%s" short-link))
+   ((string-match-p "^.*\\.\\(png\\)$" short-link)
+    (concat "/static/" short-link))))
+
 (defun elwiki/page-name (path)
   "Return the name of the wikipage at PATH."
   (file-name-sans-extension
@@ -113,8 +124,9 @@ If the header or footer file does not exist, nil is returned."
       (with-temp-buffer
         (insert-file-contents wiki-header-or-footer-file)
         (with-current-buffer
-            (creole-html (current-buffer) nil
-                         :do-font-lock t)
+            (let ((creole-link-resolver-fn 'elwiki/link-resolver))
+             (creole-html (current-buffer) nil
+                          :do-font-lock t))
           (buffer-string))))))
 
 (defun* elwiki/render-page (httpcon wikipage pageinfo &key pre post)
@@ -146,8 +158,9 @@ verbatim."
     (with-temp-buffer
       (insert-file-contents wikipage)
       (with-current-buffer
-          (creole-html (current-buffer) nil
-                       :do-font-lock t)
+          (let ((creole-link-resolver-fn 'elwiki/link-resolver))
+           (creole-html (current-buffer) nil
+                        :do-font-lock t))
         (buffer-string))))
    ;; Argument-passed footer.
    (when post
