@@ -349,15 +349,13 @@ include the extension.
 
 Update operations are NOT protected by authentication.  Soft
 security is used."
-  (let ((action
-         (intern
-          (or (elnode-http-param httpcon "action")
-              "none")))
-        (ehm (symbol-function 'elnode-http-mapping)))
-    (flet ((elnode-http-mapping (httpcon which) ;(concat targetfile ".creole"))
-             (if (eq action 'random)
-                 (elt elwiki/wiki-files (random (length elwiki/wiki-files)))
-                 (funcall ehm httpcon which)))
+  (let ((action (intern
+                 (or (elnode-http-param httpcon "action")
+                     "none"))))
+    (when (eq action 'random)
+      (elnode-send-redirect
+       httpcon (elt elwiki/wiki-files (random (length elwiki/wiki-files)))))
+    (flet (;(elnode-http-mapping (httpcon which)(concat targetfile ".creole"))
            (elnode-not-found (httpcon target-file)
              (elwiki/page-not-found httpcon target-file action)))
       (elnode-method httpcon
@@ -369,8 +367,6 @@ security is used."
                do
                (case action
                  (none
-                  (elwiki-page httpcon target-path targetfile))
-                 (random
                   (elwiki-page httpcon target-path targetfile))
                  (edit
                   (elwiki-edit-page httpcon target-path))
