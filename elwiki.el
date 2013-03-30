@@ -334,6 +334,11 @@ verbatim."
       (esxml-to-xml "The page you requested does not exist.
 You can <a href=\"?action=edit\">create it</a> if you wish."))))
 
+(defvar elwiki/wiki-files
+(setq elwiki/wiki-files
+  (directory-files elwiki-wikiroot nil "^[A-Z][a-z]+[A-Z][a-z]+"))
+  "The list of wiki files")
+
 (defun elwiki/handler (httpcon)
   "A low level handler for wiki operations.
 
@@ -344,44 +349,50 @@ include the extension.
 
 Update operations are NOT protected by authentication.  Soft
 security is used."
-  (let ((targetfile (elnode-http-mapping httpcon 1))
-        (action (intern (or (elnode-http-param httpcon "action")
-                            "none"))))
-   (flet (
-          ;;(elnode-http-mapping (httpcon which)
-          ;;  (concat targetfile ".creole"))
-          (elnode-not-found (httpcon target-file)
-            (elwiki/page-not-found httpcon target-file action)))
-     (elnode-method httpcon
-       (GET
-        (elnode-docroot-for elwiki-wikiroot
-          with target-path
-          on httpcon
-          do
-          (case action
-            (none
-             (elwiki-page httpcon target-path targetfile))
-            (edit
-             (elwiki-edit-page httpcon target-path))
-            (history
-             (elwiki-history-page httpcon target-path)))))
-       (POST
-        (let ((path (elnode-http-pathinfo httpcon))
+  (let ((action
+         (intern
+          (or (elnode-http-param httpcon "action")
+              "none")))
+        (ehm (symbol-function 'elnode-http-mapping)))
+    (flet ((elnode-http-mapping (httpcon which) ;(concat targetfile ".creole"))
+             (if (eq action 'random)
+                 (elt elwiki/wiki-files (random (length elwiki/wiki-files)))
+                 (funcall ehm httpcon which)))
+           (elnode-not-found (httpcon target-file)
+             (elwiki/page-not-found httpcon target-file action)))
+      (elnode-method httpcon
+        (GET
+         (let ((targetfile (elnode-http-mapping httpcon 1)))
+           (elnode-docroot-for elwiki-wikiroot
+               with target-path
+               on httpcon
+               do
+               (case action
+                 (none
+                  (elwiki-page httpcon target-path targetfile))
+                 (random
+                  (elwiki-page httpcon target-path targetfile))
+                 (edit
+                  (elwiki-edit-page httpcon target-path))
+                 (history
+                  (elwiki-history-page httpcon target-path))))))
+        (POST
+         (let ((path (elnode-http-pathinfo httpcon))
                (text (elwiki/text-param httpcon)))
-          (cond
-           ;; A save request in which case save the new text and then
-           ;; send the wiki text.
-           ((and (elnode-http-param httpcon "save")
-                 (eq action 'edit))
-            (elwiki/save-request httpcon elwiki-wikiroot path text))
-           ;; A preview request in which case send back the WIKI text
-           ;; that's been sent.
-           ((and (elnode-http-param httpcon "preview")
-                 (eq action 'edit))
-            (let ((preview-file-name "/tmp/preview"))
-              (with-temp-file preview-file-name
-                (insert text))
-              (elwiki-edit-page httpcon preview-file-name path t))))))))))
+           (cond
+             ;; A save request in which case save the new text and then
+             ;; send the wiki text.
+             ((and (elnode-http-param httpcon "save")
+                   (eq action 'edit))
+              (elwiki/save-request httpcon elwiki-wikiroot path text))
+             ;; A preview request in which case send back the WIKI text
+             ;; that's been sent.
+             ((and (elnode-http-param httpcon "preview")
+                   (eq action 'edit))
+              (let ((preview-file-name "/tmp/preview"))
+                (with-temp-file preview-file-name
+                  (insert text))
+                (elwiki-edit-page httpcon preview-file-name path t))))))))))
 
 (defun elwiki/router (httpcon)
   "Dispatch to a handler depending on the URL.
