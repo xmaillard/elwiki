@@ -388,8 +388,9 @@ security is used."
 
 So, for example, a handler for wiki pages, a separate handler for
 images, and so on."
-  (let ((webserver (elnode-webserver-handler-maker
-                    (concat elwiki-dir "/static/"))))
+  (let ((webserver
+         (elnode-webserver-handler-maker
+          (concat (file-name-as-directory elwiki-wikiroot) "static/"))))
     (elnode-hostpath-dispatcher httpcon
      `(("^[^/]*//wiki/\\(.*\\)" . elwiki/handler)
        ("^[^/]*//static/\\(.*\\)$" . ,webserver)))))
