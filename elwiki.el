@@ -134,11 +134,23 @@ If the header or footer file does not exist, nil is returned."
   (let* ((htmlbuf (generate-new-buffer "*elwiki-html*"))
          (creole-oddmuse-on t)
          (creole-link-resolver-fn 'elwiki/link-resolver))
-    (with-current-buffer (find-file-noselect wikipage)
-      (unless raw-p
-        (creole-html (current-buffer) htmlbuf :do-font-lock t))
-      (with-current-buffer (if raw-p (current-buffer) htmlbuf)
-        (buffer-substring-no-properties (point-min) (point-max))))))
+    (unwind-protect
+         (with-current-buffer (find-file-noselect wikipage)
+           (unless raw-p
+             (creole-html (current-buffer) htmlbuf :do-font-lock t))
+           (with-current-buffer (if raw-p (current-buffer) htmlbuf)
+             (buffer-substring (point-min) (point-max))))
+      (kill-buffer htmlbuf))))
+
+(defun elwiki/css-decl (text)
+  "Produce the css-decl from the TEXT.
+
+This should possibly just be a creole function?"
+  (let ((css-pos (next-single-property-change
+                  (point-min) :css-list text)))
+    (when css-pos
+      (creole/css-list-to-style-decl
+       (get-text-property css-pos :css-list text)))))
 
 (defun* elwiki/render-page (httpcon wikipage pageinfo &key pre post)
   "Creole render a WIKIPAGE back to the HTTPCON.
