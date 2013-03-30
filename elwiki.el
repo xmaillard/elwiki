@@ -347,8 +347,9 @@ security is used."
   (let ((targetfile (elnode-http-mapping httpcon 1))
         (action (intern (or (elnode-http-param httpcon "action")
                             "none"))))
-   (flet ((elnode-http-mapping (httpcon which)
-            (concat targetfile ".creole"))
+   (flet (
+          ;;(elnode-http-mapping (httpcon which)
+          ;;  (concat targetfile ".creole"))
           (elnode-not-found (httpcon target-file)
             (elwiki/page-not-found httpcon target-file action)))
      (elnode-method httpcon
