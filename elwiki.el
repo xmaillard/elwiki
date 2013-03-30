@@ -169,23 +169,25 @@ verbatim."
      (esxml-head (format "%s: %s" elwiki-wiki-name page-name)
        (link 'stylesheet
              "text/css"
-             elwiki-global-stylesheet))))
-   (elnode-http-send-string
-    httpcon
-    (format "<body><h1>%s</h1>" page-name))
+             elwiki-global-stylesheet)
+       (style (elwiki/css-decl page-content)))))
+   (elnode-http-send-string httpcon "<body>")
    ;; Site-wide header.
    (let ((hdr (elwiki/site-header-or-footer 'header)))
      (when hdr (elnode-http-send-string httpcon hdr)))
    ;; Argument-passed header.
    (when pre
      (elnode-http-send-string httpcon pre))
+   (elnode-http-send-string httpcon (format "<h1>%s</h1>" page-name))
    ;; Rendered creole page.
-   (elnode-http-send-string httpcon (elwiki/get-page wikipage))
+   (elnode-http-send-string httpcon page-content)
    ;; Argument-passed footer.
    (when post
      (elnode-http-send-string httpcon post))
    ;; Site-wide footer.
-   (elnode-http-send-string httpcon (or (elwiki/site-header-or-footer 'footer) ""))
+   (elnode-http-send-string
+    httpcon
+    (or (elwiki/site-header-or-footer 'footer) ""))
    (elnode-http-return httpcon "</body>\n</html>")))
 
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
