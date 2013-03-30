@@ -114,17 +114,20 @@ If the header or footer file does not exist, nil is returned."
 
   (when (not (and (symbolp header-or-footer)
                   (member header-or-footer '(header footer))))
-    (error "Expected 'header or 'footer for second argument, got %S" header-or-footer))
-  (let ((wiki-header-or-footer-file (format "%s__%s.creole"
-                                            (elwiki/wiki-directory)
-                                            (symbol-name header-or-footer))))
+    (error
+     "Expected 'header or 'footer for second argument, got %S"
+     header-or-footer))
+  (let ((wiki-header-or-footer-file
+         (format "%s__%s.creole"
+                 (elwiki/wiki-directory)
+                 (symbol-name header-or-footer))))
     (when (file-exists-p wiki-header-or-footer-file)
       (with-temp-buffer
         (insert-file-contents wiki-header-or-footer-file)
         (with-current-buffer
-            (let ((creole-link-resolver-fn 'elwiki/link-resolver))
-             (creole-html (current-buffer) nil
-                          :do-font-lock t))
+            (let ((creole-oddmuse-on t)
+                  (creole-link-resolver-fn 'elwiki/link-resolver))
+             (creole-html (current-buffer) nil :do-font-lock t))
           (buffer-string))))))
 
 (defun elwiki/get-page (wikipage &optional raw-p)
