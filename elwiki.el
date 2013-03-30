@@ -101,9 +101,7 @@ generate HTML from creole pages."
 
 Returns the canonical path of the directory in which the wiki
 pages are stored."
-  (file-name-as-directory
-   (concat (file-name-as-directory elwiki-wikiroot)
-           "wiki/")))
+  (file-name-as-directory elwiki-wikiroot))
 
 (defun elwiki/site-header-or-footer (header-or-footer)
   "Return the site-wide creole header or footer to HTTPCON.
