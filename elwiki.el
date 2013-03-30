@@ -157,9 +157,10 @@ This should possibly just be a creole function?"
 
 PRE and POST are put before and after the rendered WIKIPAGE,
 verbatim."
-  (let ((page-name (if pageinfo
-                       (elwiki/page-name pageinfo)
-                     (elwiki/page-name wikipage))))
+  (let* ((page-name (if pageinfo
+                        (elwiki/page-name pageinfo)
+                        (elwiki/page-name wikipage)))
+         (page-content (elwiki/get-page wikipage)))
    (elnode-http-send-string httpcon "<html>")
    ;; Document head
    (elnode-http-send-string
