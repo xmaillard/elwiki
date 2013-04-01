@@ -79,7 +79,7 @@
   "Test `elwiki/render-page'."
   (fakir-mock-process :httpcon ()
     (let ((elwiki-wikiroot "/path/to/wikiroot/")
-          (test-file-contents "= Text page =\Nthis is a test wiki page\n"))
+          (test-file-contents "= Test page =\Nthis is a test wiki page\n"))
       (fakir-mock-file
           (fakir-file
            :filename "test.creole"
