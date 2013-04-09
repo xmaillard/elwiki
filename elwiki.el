@@ -137,7 +137,9 @@ If the header or footer file does not exist, nil is returned."
     (unwind-protect
          (with-current-buffer (find-file-noselect wikipage)
            (unless raw-p
-             (creole-html (current-buffer) htmlbuf :do-font-lock t))
+             (creole-html (current-buffer) htmlbuf
+                          :do-font-lock t
+                          :structure-transform-fn 'creole-content-list))
            (with-current-buffer (if raw-p (current-buffer) htmlbuf)
              (buffer-substring (point-min) (point-max))))
       (kill-buffer htmlbuf))))
@@ -149,7 +151,7 @@ This should possibly just be a creole function?"
   (let ((css-pos (next-single-property-change
                   (point-min) :css-list text)))
     (when css-pos
-      (creole/css-list-to-style-decl
+      (creole-css-list-to-style-decl
        (get-text-property css-pos :css-list text)))))
 
 (defun* elwiki/render-page (httpcon wikipage pageinfo &key pre post)
