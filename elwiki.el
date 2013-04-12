@@ -341,6 +341,10 @@ You can <a href=\"?action=edit\">create it</a> if you wish."))))
   (directory-files elwiki-wikiroot nil "^[A-Z][a-z]+[A-Z][a-z]+"))
   "The list of wiki files")
 
+(defun elwiki/random-page ()
+  "Get a random page for the Wiki."
+  (elt elwiki/wiki-files (random (length elwiki/wiki-files))))
+
 (defun elwiki/handler (httpcon)
   "A low level handler for wiki operations.
 
@@ -355,8 +359,7 @@ security is used."
                  (or (elnode-http-param httpcon "action")
                      "none"))))
     (when (eq action 'random)
-      (elnode-send-redirect
-       httpcon (elt elwiki/wiki-files (random (length elwiki/wiki-files)))))
+      (elnode-send-redirect httpcon (eliwki/random-page)))
     (flet (;(elnode-http-mapping (httpcon which)(concat targetfile ".creole"))
            (elnode-not-found (httpcon target-file)
              (elwiki/page-not-found httpcon target-file action)))
