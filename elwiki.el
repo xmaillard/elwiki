@@ -203,32 +203,32 @@ verbatim."
              ((action . ,(format "%s?action=edit" pageinfo))
               (method . "POST"))
              (fieldset ()
-                       (legend () ,(format "Edit %s" (file-name-nondirectory pageinfo)))
-                       (textarea ((cols . "80")
-                                  (rows . "20")
-                                  (name . "wikitext"))
-                                 ,(if (file-exists-p wikipage)
-                                      (with-temp-buffer
-                                        (insert-file-contents wikipage)
-                                        (buffer-string))
-                                    ""))
-                       (br ())
-                       (label () "Edit comment:"
-                              (input ((type . "text")
-                                      (name . "comment")
-                                      (value . ,(or comment "")))))
-                       (br ())
-                       (label () "Username:"
-                              (input ((type . "text")
-                                      (name . "username")
-                                      (value . ,(or username "")))))
-                       (br ())
-                       (input ((type . "submit")
-                               (name . "save")
-                               (value . "save")))
-                       (input ((type . "submit")
-                               (name . "preview")
-                               (value . "preview"))))))))
+               (legend () ,(format "Edit %s" (file-name-nondirectory pageinfo)))
+               (textarea ((cols . "80")
+                          (rows . "20")
+                          (name . "wikitext"))
+                 ,(if (file-exists-p wikipage)
+                      (with-temp-buffer
+                        (insert-file-contents wikipage)
+                        (buffer-string))
+                    ""))
+               (br ())
+               (label () "Edit comment:"
+                 (input ((type . "text")
+                         (name . "comment")
+                         (value . ,(or comment "")))))
+               (br ())
+               (label () "Username:"
+                 (input ((type . "text")
+                         (name . "username")
+                         (value . ,(or username "")))))
+               (br ())
+               (input ((type . "submit")
+                       (name . "save")
+                       (value . "save")))
+               (input ((type . "submit")
+                       (name . "preview")
+                       (value . "preview"))))))))
     (if preview
         (elwiki/render-page
          httpcon
@@ -239,12 +239,12 @@ verbatim."
        httpcon
        (esxml-to-xml
         `(html ()
-               ,(esxml-head (format "%s: editing %s" elwiki-wiki-name page-name)
-                  (link 'stylesheet
-                        "text/css"
-                        elwiki-global-stylesheet))
-               (body ()
-                     ,editor)))))))
+           ,(esxml-head (format "%s: editing %s" elwiki-wiki-name page-name)
+                        (link 'stylesheet
+                              "text/css"
+                              elwiki-global-stylesheet))
+           (body ()
+             ,editor)))))))
 
 (defun elwiki-history-page (httpcon wikipage)
   (elnode-error "Generating history page for %s" wikipage)
@@ -255,20 +255,20 @@ verbatim."
     httpcon
     (pp-esxml-to-xml
      `(html ()
-            (body ()
-                  ,(esxml-listify
-                    (mapcar
-                     (lambda (commit)
-                       (kvmap-bind (class &rest field)
+        (body ()
+          ,(esxml-listify
+            (mapcar
+             (lambda (commit)
+               (kvmap-bind (class &rest field)
                            `(div ((class . ,(symbol-name class)))
                                  ,(if (string= "hash" class)
                                       (esxml-link (concat "?rev=" field)
                                                   field)
                                     field))
-                         commit))
-                     (elwiki/commit-log wikipage
-                                        commits-per-page
-                                        (* page commits-per-page))))))))))
+                           commit))
+             (elwiki/commit-log wikipage
+                                commits-per-page
+                                (* page commits-per-page))))))))))
 
 (defun elwiki/text-param (httpcon)
   "Get the text parameter from HTTPCON and convert the line endings."
