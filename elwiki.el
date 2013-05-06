@@ -359,7 +359,7 @@ security is used."
                  (or (elnode-http-param httpcon "action")
                      "none"))))
     (when (eq action 'random)
-      (elnode-send-redirect httpcon (eliwki/random-page)))
+      (elnode-send-redirect httpcon (elwiki/random-page)))
     (flet (;(elnode-http-mapping (httpcon which)(concat targetfile ".creole"))
            (elnode-not-found (httpcon target-file)
              (elwiki/page-not-found httpcon target-file action)))
