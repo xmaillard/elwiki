@@ -33,6 +33,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'elwiki)
 
 (ert-deftest elwiki/page-name ()
   "Test `elwiki/page-name'."
