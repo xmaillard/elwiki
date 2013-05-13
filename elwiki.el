@@ -47,7 +47,7 @@
 ;;; Code:
 
 (elnode-app elwiki-dir
-    elwiki-vc creole esxml htmlize)
+    elwiki-vc creole esxml esxml-html htmlize)
 
 (defgroup elwiki nil
   "A Wiki server written with Elnode."
