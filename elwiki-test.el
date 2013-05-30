@@ -34,6 +34,7 @@
 
 (require 'ert)
 (require 'elwiki)
+(require 'fakir)
 
 (ert-deftest elwiki/page-name ()
   "Test `elwiki/page-name'."
