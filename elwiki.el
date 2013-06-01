@@ -101,7 +101,9 @@ generate HTML from creole pages."
 
 Returns the canonical path of the directory in which the wiki
 pages are stored."
-  (file-name-as-directory elwiki-wikiroot))
+  (file-name-as-directory
+   (concat (file-name-as-directory elwiki-wikiroot)
+           "wiki/")))
 
 (defun elwiki/site-header-or-footer (header-or-footer)
   "Return the site-wide creole header or footer to HTTPCON.
@@ -147,7 +149,7 @@ This should possibly just be a creole function?"
   (let ((css-pos (next-single-property-change
                   (point-min) :css-list text)))
     (when css-pos
-      (creole/css-list-to-style-decl
+      (creole-css-list-to-style-decl
        (get-text-property css-pos :css-list text)))))
 
 (defun* elwiki/render-page (httpcon wikipage pageinfo &key pre post)
@@ -347,19 +349,21 @@ include the extension.
 
 Update operations are NOT protected by authentication.  Soft
 security is used."
-  (let ((action (intern
+  (let ((targetfile (elnode-http-mapping httpcon 1))
+        (action (intern
                  (or (elnode-http-param httpcon "action")
                      "none"))))
     (when (eq action 'random)
       (elnode-send-redirect
        httpcon (elt elwiki/wiki-files (random (length elwiki/wiki-files)))))
-    (flet (;(elnode-http-mapping (httpcon which)(concat targetfile ".creole"))
+    (flet ((elnode-http-mapping (httpcon which)
+            (concat targetfile ".creole"))
            (elnode-not-found (httpcon target-file)
              (elwiki/page-not-found httpcon target-file action)))
       (elnode-method httpcon
         (GET
          (let ((targetfile (elnode-http-mapping httpcon 1)))
-           (elnode-docroot-for elwiki-wikiroot
+           (elnode-docroot-for (concat elwiki-wikiroot "/wiki/")
                with target-path
                on httpcon
                do
