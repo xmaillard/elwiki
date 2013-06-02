@@ -132,6 +132,9 @@ If the header or footer file does not exist, nil is returned."
           (buffer-string))))))
 
 (defun elwiki/get-page (wikipage &optional raw-p)
+  "Get the rendered WIKIPAGE as HTML, or creole if RAW-P is `t'.
+
+A string containing the HTML (or the creole) is returned."
   (let* ((htmlbuf (generate-new-buffer "*elwiki-html*"))
          (creole-link-resolver-fn 'elwiki/link-resolver))
     (unwind-protect
