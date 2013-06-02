@@ -93,7 +93,7 @@
          nil))
       (should (string=
                test-file-contents
-               (with-current-buffer (process-buffer :httpcon)
+               (with-current-buffer (fakir-get-output-buffer)
                  (buffer-string)))))))
 
 (ert-deftest elwiki-page ()
