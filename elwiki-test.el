@@ -98,7 +98,7 @@
                  (with-current-buffer
                      (creole-html (current-buffer) nil :do-font-lock t)
                    (buffer-string)))
-               (with-current-buffer (process-buffer :httpcon)
+               (with-current-buffer (fakir-get-output-buffer)
                  (buffer-string)))))))
 
 (ert-deftest elwiki-page ()
