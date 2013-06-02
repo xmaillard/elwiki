@@ -185,35 +185,43 @@ verbatim."
   (let* ((page-name (if pageinfo
                         (elwiki/page-name pageinfo)
                         (elwiki/page-name wikipage)))
-         (page-content (elwiki/get-page wikipage)))
-   (elnode-http-send-string httpcon "<html>")
-   ;; Document head
-   (elnode-http-send-string
-    httpcon
-    (esxml-to-xml
-     (esxml-head (format "%s: %s" elwiki-wiki-name page-name)
-       (link 'stylesheet
-             "text/css"
-             elwiki-global-stylesheet)
-       (style (elwiki/css-decl page-content)))))
-   (elnode-http-send-string httpcon "<body>")
-   ;; Site-wide header.
-   (let ((hdr (elwiki/site-header-or-footer 'header)))
-     (when hdr (elnode-http-send-string httpcon hdr)))
-   ;; Argument-passed header.
-   (when pre
-     (elnode-http-send-string httpcon pre))
-   (elnode-http-send-string httpcon (format "<h1>%s</h1>" page-name))
-   ;; Rendered creole page.
-   (elnode-http-send-string httpcon page-content)
-   ;; Argument-passed footer.
-   (when post
-     (elnode-http-send-string httpcon post))
-   ;; Site-wide footer.
-   (elnode-http-send-string
-    httpcon
-    (or (elwiki/site-header-or-footer 'footer) ""))
-   (elnode-http-return httpcon "</body>\n</html>")))
+         (page-buf (find-file-noselect wikipage)))
+    (with-current-buffer page-buf
+      (save-excursion
+        (save-match-data
+          (when (re-search-forward "^REDIRECT \\(.*\\)$" nil t)
+            (signal :elwiki/redirect (list (match-string 1)))))))
+    (let ((page-content (elwiki/get-page page-buf)))
+      (elnode-http-start httpcon 200
+                         `("content-type" . "text/html; charset=utf-8"))
+      (elnode-http-send-string httpcon "<html>")
+      ;; Document head
+      (elnode-http-send-string
+       httpcon
+       (esxml-to-xml
+        (esxml-head (format "%s: %s" elwiki-wiki-name page-name)
+          (link 'stylesheet
+                "text/css"
+                elwiki-global-stylesheet)
+          (style (elwiki/css-decl page-content)))))
+      (elnode-http-send-string httpcon "<body>")
+      ;; Site-wide header.
+      (let ((hdr (elwiki/site-header-or-footer 'header)))
+        (when hdr (elnode-http-send-string httpcon hdr)))
+      ;; Argument-passed header.
+      (when pre
+        (elnode-http-send-string httpcon pre))
+      (elnode-http-send-string httpcon (format "<h1>%s</h1>" page-name))
+      ;; Rendered creole page.
+      (elnode-http-send-string httpcon page-content)
+      ;; Argument-passed footer.
+      (when post
+        (elnode-http-send-string httpcon post))
+      ;; Site-wide footer.
+      (elnode-http-send-string
+       httpcon
+       (or (elwiki/site-header-or-footer 'footer) ""))
+      (elnode-http-return httpcon "</body>\n</html>"))))
 
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
   "Creole render a WIKIPAGE back to the HTTPCON."
@@ -230,18 +238,19 @@ verbatim."
               (elnode-http-start
                httpcon 200 '("content-type" . "text/plain; charset=utf-8"))
               (elnode-http-return
-               httpcon (elwiki/get-page wikipage t)))
+               httpcon (elwiki/get-page (find-file-noselect wikipage) t)))
             ;; Else send the HTML
-            (elnode-http-start
-             httpcon 200 `("content-type" . "text/html; charset=utf-8"))
-            (elwiki/render-page
-             httpcon
-             (or page-buffer wikipage)
-             pageinfo
-             :post (pp-esxml-to-xml
-                    `(div ((class . "actions"))
-                          ,(esxml-link "?action=edit" "Edit this page")
-                          ,(esxml-link "?action=history" "View page history"))))))
+            (condition-case sig
+                (elwiki/render-page
+                 httpcon
+                 (or page-buffer wikipage)
+                 pageinfo
+                 :post (pp-esxml-to-xml
+                        `(div ((class . "actions"))
+                              ,(esxml-link "?action=edit" "Edit this page")
+                              ,(esxml-link "?action=history" "View page history"))))
+              (:elwiki/redirect
+               (elnode-send-redirect httpcon (cadr sig))))))
     (when page-buffer
       (kill-buffer page-buffer))))
 
