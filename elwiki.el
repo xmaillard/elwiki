@@ -80,6 +80,29 @@ slash.  In most cases, the file should be in \"/static/\"."
   :type '(file)
   :group 'elwiki)
 
+
+;; Signal handling
+
+(defmacro defsignal (err-symbol inherits-list message)
+  "Define a signal moar easily."
+  (declare (indent 3))
+  (let ((errv (make-symbol "err-v")))
+    `(let ((,errv ,err-symbol))
+       (put ,errv
+            'error-conditions
+            (quote ,inherits-list))
+       (put ,errv
+            'error-message
+            ,message))))
+
+(defsignal
+    :elwiki/redirect
+    (:elwiki :elwiki/redirect)
+    "A redirect has been sent.")
+
+
+;; The main wiki
+
 (defun elwiki/link-resolver (short-link)
   "Resolver for bare links in creole.
 
