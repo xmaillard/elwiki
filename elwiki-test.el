@@ -101,24 +101,4 @@
                (with-current-buffer (fakir-get-output-buffer)
                  (buffer-string)))))))
 
-(ert-deftest elwiki-page ()
-  "Full stack Wiki test."
-  (with-elnode-mock-server
-      ;; The dispatcher function
-      (lambda (httpcon)
-        (let ((elwiki-wikiroot "/home/elnode/wiki"))
-          (elnode-hostpath-dispatcher
-           httpcon
-           '(("[^/]*//wiki/\\(.*\\)" . elwiki/handler))))) t
-    (fakir-mock-file (fakir-file
-                      :filename "test.creole"
-                      :directory "/home/elnode/wiki"
-                      :content "= Hello World =\nthis is a creole wiki file!\n")
-        (let* ((elnode--do-error-logging nil)
-               (elnode--do-access-logging-on-dispatch nil))
-          (should-elnode-response
-           (elnode-test-call "/wiki/test.creole")
-           :status-code 200
-           :body-match ".*<h1>Hello World</h1>.*")))))
-
 ;;; elwiki-test.el ends here
