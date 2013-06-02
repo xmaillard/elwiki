@@ -92,7 +92,12 @@
          "/path/to/wikiroot/wiki/test.creole"
          nil))
       (should (string=
-               test-file-contents
+               (with-temp-buffer
+                 (insert test-file-contents)
+                 ;; Invoke `creole-html' as it is in Elwiki.
+                 (with-current-buffer
+                     (creole-html (current-buffer) nil :do-font-lock t)
+                   (buffer-string)))
                (with-current-buffer (process-buffer :httpcon)
                  (buffer-string)))))))
 
