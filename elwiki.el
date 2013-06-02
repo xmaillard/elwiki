@@ -153,12 +153,12 @@ If the header or footer file does not exist, nil is returned."
              (creole-html (current-buffer) nil :do-font-lock t))
           (buffer-string))))))
 
-(defun elwiki/get-page (wikipage &optional raw-p)
+(defun elwiki/get-page (wikipage-buffer &optional raw-p)
   (let* ((htmlbuf (generate-new-buffer "*elwiki-html*"))
          (creole-oddmuse-on t)
          (creole-link-resolver-fn 'elwiki/link-resolver))
     (unwind-protect
-         (with-current-buffer (find-file-noselect wikipage)
+         (with-current-buffer wikipage-buffer
            (unless raw-p
              (creole-html (current-buffer) htmlbuf
                           :do-font-lock t
