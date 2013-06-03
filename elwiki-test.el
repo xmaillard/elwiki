@@ -92,12 +92,16 @@
          "/path/to/wikiroot/wiki/test.creole"
          nil))
       (should (string=
-               (with-temp-buffer
-                 (insert test-file-contents)
-                 ;; Invoke `creole-html' as it is in Elwiki.
-                 (with-current-buffer
-                     (creole-html (current-buffer) nil :do-font-lock t)
-                   (buffer-string)))
+               "<html>\n<head>
+<title>Elwiki: test</title>
+<link rel=\"stylesheet\" tyle=\"text/css\" href=\"/static/style.css\"/>
+<body>
+<h1>test</h1>
+<a id='Test-page'></a>
+<h1>Test page</h1>
+<p>this is a test wiki page</p>
+</body>
+</html>"
                (with-current-buffer (fakir-get-output-buffer)
                  (buffer-string)))))))
 
