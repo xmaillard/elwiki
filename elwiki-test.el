@@ -79,20 +79,24 @@
 
 (ert-deftest elwiki/render-page ()
   "Test `elwiki/render-page'."
-  (fakir-mock-process :httpcon ()
-    (let ((elwiki-wikiroot "/path/to/wikiroot/")
-          (test-file-contents "= Test page =\nthis is a test wiki page\n"))
-      (fakir-mock-file
+  (let ((output ""))
+   (noflet ((elnode-http-send-string (httpcon data)
+              (setq output (concat output data))
+              (funcall this-fn httpcon data)))
+     (fakir-mock-process :httpcon ()
+       (let ((elwiki-wikiroot "/path/to/wikiroot/")
+             (test-file-contents "= Test page =\nthis is a test wiki page\n"))
+         (fakir-mock-file
           (fakir-file
            :filename "test.creole"
            :directory "/path/to/wikiroot/wiki"
            :content test-file-contents)
-        (elwiki/render-page
-         :httpcon
-         "/path/to/wikiroot/wiki/test.creole"
-         nil))
-      (should (string=
-               "<html>\n<head>
+          (elwiki/render-page
+           :httpcon
+           "/path/to/wikiroot/wiki/test.creole"
+           nil))
+         (should (string=
+                  "<html>\n<head>
 <title>Elwiki: test</title>
 <link rel=\"stylesheet\" tyle=\"text/css\" href=\"/static/style.css\"/>
 <body>
@@ -102,7 +106,6 @@
 <p>this is a test wiki page</p>
 </body>
 </html>"
-               (with-current-buffer (fakir-get-output-buffer)
-                 (buffer-string)))))))
+                  output)))))))
 
 ;;; elwiki-test.el ends here
