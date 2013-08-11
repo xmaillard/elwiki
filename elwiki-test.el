@@ -89,7 +89,16 @@
      (should (file-exists-p "/path/to/wikiroot/wiki/__header.creole"))
      (should (string=
               "<p>ERT header file</p>\n"
-              (elwiki/site-header-or-footer 'header))))))
+              (elwiki/site-header-or-footer 'header))))
+   (fakir-mock-file
+       (fakir-file
+        :filename "__footer.creole"
+        :directory "/path/to/wikiroot/wiki"
+        :content "ERT footer file\n")
+     (should (file-exists-p "/path/to/wikiroot/wiki/__footer.creole"))
+     (should (string=
+              "<p>ERT footer file</p>\n"
+              (elwiki/site-header-or-footer 'footer))))))
 
 (ert-deftest elwiki/render-page ()
   "Test `elwiki/render-page'."
