@@ -36,6 +36,20 @@
 (require 'elwiki)
 (require 'fakir)
 
+(ert-deftest elwiki/link-resolver ()
+  "Test `elwiki/link-resolver'."
+  (should (string= "/wiki/WikiPageName"
+                   (elwiki/link-resolver "WikiPageName")))
+  (should (string= "/static/image.png"
+                   (elwiki/link-resolver "image.png")))
+  ;; `elwiki/link-resolver' should not be called for anything other
+  ;; than wiki page names and images; for all other inputs, it should
+  ;; return `nil'.
+  (should (eq nil
+             (elwiki/link-resolver "http://www.example.com/")))
+  (should (eq nil
+             (elwiki/link-resolver "/anything/else"))))
+
 (ert-deftest elwiki/page-name ()
   "Test `elwiki/page-name'."
   (should (string= "pagename"

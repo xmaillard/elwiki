@@ -86,7 +86,8 @@ slash.  In most cases, the file should be in \"/static/\"."
 Bound to `creole-link-resolver-fn' when calling elwikicreole to
 generate HTML from creole pages."
   (cond
-   ((not (find ?. short-link)) ;; Only wiki page links have no extension.
+   ((not (or (find ?. short-link) ;; Only wiki page links have no extension.
+             (find ?/ short-link))) ;; But they can not contain slashes.
     (format "/wiki/%s" short-link))
    ((string-match-p "^.*\\.\\(png\\)$" short-link)
     (concat "/static/" short-link))))
