@@ -109,16 +109,20 @@
        (let ((elwiki-wikiroot "/path/to/wikiroot/")
              (test-file-contents "= Test page =\nthis is a test wiki page\n"))
          (fakir-mock-file
-          (fakir-file
-           :filename "test.creole"
-           :directory "/path/to/wikiroot/wiki"
-           :content test-file-contents)
-          (elwiki/render-page
-           :httpcon
-           "/path/to/wikiroot/wiki/test.creole"
-           nil))
-         (should (string=
-                  "<html>\n<head>
+             (fakir-file
+              :filename "test.creole"
+              :directory "/path/to/wikiroot/wiki"
+              :content test-file-contents)
+           (elwiki/render-page
+            :httpcon
+            "/path/to/wikiroot/wiki/test.creole"
+            nil))
+         (should
+          (string=
+           output
+           (replace-regexp-in-string
+            "\n" ""
+            "<html>\n<head>
 <title>Elwiki: test</title>
 <link rel=\"stylesheet\" tyle=\"text/css\" href=\"/static/style.css\"/>
 <body>
@@ -127,7 +131,6 @@
 <h1>Test page</h1>
 <p>this is a test wiki page</p>
 </body>
-</html>"
-                  output)))))))
+</html>"))))))))
 
 ;;; elwiki-test.el ends here
