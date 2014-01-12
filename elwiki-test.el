@@ -104,8 +104,7 @@
   "Test `elwiki/render-page'."
   (let ((output ""))
    (noflet ((elnode-http-send-string (httpcon data)
-              (setq output (concat output data))
-              (funcall this-fn httpcon data)))
+              (setq output (concat output data))))
      (fakir-mock-process :httpcon ()
        (let ((elwiki-wikiroot "/path/to/wikiroot/")
              (test-file-contents "= Test page =\nthis is a test wiki page\n"))
