@@ -119,18 +119,9 @@
             nil))
          (should
           (string=
-           output
-           (replace-regexp-in-string
-            "\n" ""
-            "<html>\n<head>
-<title>Elwiki: test</title>
-<link rel=\"stylesheet\" tyle=\"text/css\" href=\"/static/style.css\"/>
-<body>
-<h1>test</h1>
-<a id='Test-page'></a>
-<h1>Test page</h1>
+           "<html><head><title>Elwiki: test</title><link rel=\"stylesheet\" tyle=\"text/css\" href=\"/static/style.css\"/><body><h1>test</h1><a id='Test-page'></a><h1>Test page</h1>
 <p>this is a test wiki page</p>
-</body>
-</html>"))))))))
+</body></html>"
+           output)))))))
 
 ;;; elwiki-test.el ends here
