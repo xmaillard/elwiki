@@ -195,7 +195,9 @@ verbatim."
    (elnode-http-return httpcon "</body>\n</html>")))
 
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
-  "Creole render a WIKIPAGE back to the HTTPCON."
+  "Creole render a WIKIPAGE back to the HTTPCON.
+
+Expects WIKIPAGE to be a file path."
   (let* ((commit (elnode-http-param httpcon "rev"))
          (raw-p (elnode-http-param httpcon "raw"))
          (page-buffer (when commit (elwiki/get-revision wikipage commit))))
