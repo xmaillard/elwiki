@@ -156,6 +156,16 @@ This should possibly just be a creole function?"
       (creole-css-list-to-style-decl
        (get-text-property css-pos :css-list text)))))
 
+(defun elwiki/page-redirect (wikipage)
+  "Return the name of the page to which WIKIPAGE redirects.
+
+Returns nil if WIKIPAGE is a normal page."
+  (with-temp-buffer
+    (insert-file-contents wikipage)
+    (save-match-data
+      (when (re-search-forward "\\`#REDIRECT \\(.*\\)\n?\\'" nil t)
+        (match-string 1)))))
+
 (defun* elwiki/render-page (httpcon wikipage pageinfo &key pre post)
   "Creole render a WIKIPAGE back to the HTTPCON.
 
@@ -200,29 +210,31 @@ verbatim."
 Expects WIKIPAGE to be a file path."
   (let* ((commit (elnode-http-param httpcon "rev"))
          (raw-p (elnode-http-param httpcon "raw"))
+         (page-redirect (elwiki/page-redirect wikipage))
          (page-buffer (when commit (elwiki/get-revision wikipage commit))))
     (if (and commit
              (not page-buffer))
         ;; A specific page revision was requested, but we failed to get it.
         (elnode-send-404 httpcon "No such page revision.")
-        ;; Else
+      (if page-redirect
+          (elnode-send-redirect httpcon page-redirect)
         (if raw-p
             (progn
               (elnode-http-start
                httpcon 200 '("content-type" . "text/plain; charset=utf-8"))
               (elnode-http-return
                httpcon (elwiki/get-page wikipage t)))
-            ;; Else send the HTML
-            (elnode-http-start
-             httpcon 200 `("content-type" . "text/html; charset=utf-8"))
-            (elwiki/render-page
-             httpcon
-             (or page-buffer wikipage)
-             pageinfo
-             :post (pp-esxml-to-xml
-                    `(div ((class . "actions"))
-                          ,(esxml-link "?action=edit" "Edit this page")
-                          ,(esxml-link "?action=history" "View page history"))))))
+          ;; Else send the HTML
+          (elnode-http-start
+           httpcon 200 `("content-type" . "text/html; charset=utf-8"))
+          (elwiki/render-page
+           httpcon
+           (or page-buffer wikipage)
+           pageinfo
+           :post (pp-esxml-to-xml
+                  `(div ((class . "actions"))
+                        ,(esxml-link "?action=edit" "Edit this page")
+                        ,(esxml-link "?action=history" "View page history")))))))
     (when page-buffer
       (kill-buffer page-buffer))))
 
