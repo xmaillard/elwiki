@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2012  Nic Ferrier, Aidan Gauland
 
-;; Author: Nic Ferrier <nferrier@ferrier.me.uk> and Aidan Gauland <aidalgol@no8wireless.co.nz>
-;; Maintainer: Aidan Gauland <aidalgol@no8wireless.co.nz>
+;; Author: Nic Ferrier <nferrier@ferrier.me.uk> and Aidan Gauland <aidalgol@amuri.net>
+;; Maintainer: Aidan Gauland <aidalgol@amuri.net>
 ;; Created: 5th October 2010
 ;; Keywords: lisp, http, hypermedia
 
