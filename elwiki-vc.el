@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2012  Nic Ferrier, Aidan Gauland
 
-;; Author: Nic Ferrier <nferrier@ferrier.me.uk> and Aidan Gauland <aidalgol@no8wireless.co.nz>
-;; Maintainer: Aidan Gauland <aidalgol@no8wireless.co.nz>
+;; Author: Nic Ferrier <nferrier@ferrier.me.uk> and Aidan Gauland <aidalgol@amuri.net>
+;; Maintainer: Aidan Gauland <aidalgol@amuri.net>
 ;; Created: 5th October 2010
 ;; Keywords: lisp, http, hypermedia
 
@@ -55,6 +55,10 @@
 
 (defun elwiki/log->alist (commit-log)
   "Generate an alist from a commit-log line."
+  (let ((seperator-count (count 0 commit-log)))
+    (when (not (= 3 seperator-count))
+      ;; There should be four fields, separated by 3 NULs.
+      (error "Wrong number of fields: %s" (1+ seperator-count))))
   (mapcar*
    (lambda (k v)
      (cons k (htmlize-protect-string v)))

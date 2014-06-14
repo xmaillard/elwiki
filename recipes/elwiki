@@ -1,0 +1,9 @@
+(elwiki
+ :version "0.0.1"
+ :doc "The EmacsWiki Wiki"
+ :requires ((esxml "0.2.3")
+            (elnode "0.9.9.6.7")
+            (creole "0.8.21"))
+ :files
+ ("elwiki.el"
+  "elwiki-vc.el"))

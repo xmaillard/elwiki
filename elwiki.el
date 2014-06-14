@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2012  Nic Ferrier, Aidan Gauland
 
-;; Author: Nic Ferrier <nferrier@ferrier.me.uk> and Aidan Gauland <aidalgol@no8wireless.co.nz>
-;; Maintainer: Aidan Gauland <aidalgol@no8wireless.co.nz>
+;; Author: Nic Ferrier <nferrier@ferrier.me.uk> and Aidan Gauland <aidalgol@amuri.net>
+;; Maintainer: Aidan Gauland <aidalgol@amuri.net>
 ;; Created: 5th October 2010
 ;; Keywords: lisp, http, hypermedia
 
@@ -47,7 +47,7 @@
 ;;; Code:
 
 (elnode-app elwiki-dir
-    elwiki-vc creole esxml htmlize)
+    elwiki-vc creole esxml esxml-html htmlize)
 
 (defgroup elwiki nil
   "A Wiki server written with Elnode."
@@ -80,23 +80,101 @@ slash.  In most cases, the file should be in \"/static/\"."
   :type '(file)
   :group 'elwiki)
 
+(defun elwiki/link-resolver (short-link)
+  "Resolver for bare links in creole.
+
+Bound to `creole-link-resolver-fn' when calling elwikicreole to
+generate HTML from creole pages."
+  (cond
+   ((not (or (find ?. short-link) ;; Only wiki page links have no extension.
+             (find ?/ short-link))) ;; But they can not contain slashes.
+    (format "/wiki/%s" short-link))
+   ((string-match-p "^.*\\.\\(png\\)$" short-link)
+    (concat "/static/" short-link))))
+
 (defun elwiki/page-name (path)
   "Return the name of the wikipage at PATH."
   (file-name-sans-extension
    (file-name-nondirectory path)))
+
+(defun elwiki/wiki-directory ()
+  "Returns the wiki-page directory.
+
+Returns the canonical path of the directory in which the wiki
+pages are stored."
+  (file-name-as-directory
+   (concat (file-name-as-directory elwiki-wikiroot)
+           "wiki/")))
+
+(defun elwiki/site-header-or-footer (header-or-footer)
+  "Return the site-wide creole header or footer to HTTPCON.
+
+HEADER-OR-FOOTER must be either 'header or 'footer (specifying
+which one of the header and footer files to send), otherwise an
+error is raised.
+
+If the header or footer file does not exist, nil is returned."
+
+  (when (not (and (symbolp header-or-footer)
+                  (member header-or-footer '(header footer))))
+    (error
+     "Expected 'header or 'footer for second argument, got %S"
+     header-or-footer))
+  (let ((wiki-header-or-footer-file
+         (format "%s__%s.creole"
+                 (elwiki/wiki-directory)
+                 (symbol-name header-or-footer))))
+    (when (file-exists-p wiki-header-or-footer-file)
+      (with-temp-buffer
+        (insert-file-contents wiki-header-or-footer-file)
+        (with-current-buffer
+            (let ((creole-link-resolver-fn 'elwiki/link-resolver))
+             (creole-html (current-buffer) nil :do-font-lock t))
+          (buffer-string))))))
+
+(defun elwiki/get-page (wikipage &optional raw-p)
+  "Get the rendered WIKIPAGE as HTML, or creole if RAW-P is `t'.
+
+A string containing the HTML (or the creole) is returned."
+  (let* ((htmlbuf (generate-new-buffer "*elwiki-html*"))
+         (creole-link-resolver-fn 'elwiki/link-resolver))
+    (unwind-protect
+         (with-current-buffer (find-file-noselect wikipage)
+           (unless raw-p
+             (creole-html (current-buffer) htmlbuf :do-font-lock t))
+           (with-current-buffer (if raw-p (current-buffer) htmlbuf)
+             (buffer-substring (point-min) (point-max))))
+      (kill-buffer htmlbuf))))
+
+(defun elwiki/css-decl (text)
+  "Produce the css-decl from the TEXT.
+
+This should possibly just be a creole function?"
+  (let ((css-pos (next-single-property-change
+                  (point-min) :css-list text)))
+    (when css-pos
+      (creole-css-list-to-style-decl
+       (get-text-property css-pos :css-list text)))))
+
+(defun elwiki/page-redirect (wikipage)
+  "Return the name of the page to which WIKIPAGE redirects.
+
+Returns nil if WIKIPAGE is a normal page."
+  (with-temp-buffer
+    (insert-file-contents wikipage)
+    (save-match-data
+      (when (re-search-forward "\\`#REDIRECT \\(.*\\)\n?\\'" nil t)
+        (match-string 1)))))
 
 (defun* elwiki/render-page (httpcon wikipage pageinfo &key pre post)
   "Creole render a WIKIPAGE back to the HTTPCON.
 
 PRE and POST are put before and after the rendered WIKIPAGE,
 verbatim."
-  (let ((page-name (if pageinfo
-                       (elwiki/page-name pageinfo)
-                     (elwiki/page-name wikipage)))
-        (wiki-header-file (concat (file-name-as-directory elwiki-wikiroot)
-                                       "/wiki/__header.creole"))
-        (wiki-footer-file (concat (file-name-as-directory elwiki-wikiroot)
-                                       "/wiki/__footer.creole")))
+  (let* ((page-name (if pageinfo
+                        (elwiki/page-name pageinfo)
+                        (elwiki/page-name wikipage)))
+         (page-content (elwiki/get-page wikipage)))
    (elnode-http-send-string httpcon "<html>")
    ;; Document head
    (elnode-http-send-string
@@ -105,69 +183,64 @@ verbatim."
      (esxml-head (format "%s: %s" elwiki-wiki-name page-name)
        (link 'stylesheet
              "text/css"
-             elwiki-global-stylesheet))))
+             elwiki-global-stylesheet)
+       (style (elwiki/css-decl page-content)))))
    (elnode-http-send-string httpcon "<body>")
    ;; Site-wide header.
-   (when (file-exists-p wiki-header-file)
-     (elnode-http-send-string
-      httpcon
-      (with-temp-buffer
-        (insert-file-contents wiki-header-file)
-        (with-current-buffer
-            (creole-html (current-buffer) nil
-                         :do-font-lock t)
-          (buffer-string)))))
+   (let ((hdr (elwiki/site-header-or-footer 'header)))
+     (when hdr (elnode-http-send-string httpcon hdr)))
    ;; Argument-passed header.
    (when pre
      (elnode-http-send-string httpcon pre))
+   (elnode-http-send-string httpcon (format "<h1>%s</h1>" page-name))
    ;; Rendered creole page.
-   (elnode-http-send-string
-    httpcon
-    (with-temp-buffer
-      (insert-file-contents wikipage)
-      (with-current-buffer
-          (creole-html (current-buffer) nil
-                       :do-font-lock t)
-        (buffer-string))))
+   (elnode-http-send-string httpcon page-content)
    ;; Argument-passed footer.
    (when post
      (elnode-http-send-string httpcon post))
    ;; Site-wide footer.
-   (when (file-exists-p wiki-footer-file)
-     (elnode-http-send-string
-      httpcon
-      (with-temp-buffer
-        (insert-file-contents wiki-footer-file)
-        (with-current-buffer
-            (creole-html (current-buffer) nil
-                         :do-font-lock t)
-          (buffer-string)))))
+   (elnode-http-send-string
+    httpcon
+    (or (elwiki/site-header-or-footer 'footer) ""))
    (elnode-http-return httpcon "</body>\n</html>")))
 
 (defun elwiki-page (httpcon wikipage &optional pageinfo)
-  "Creole render a WIKIPAGE back to the HTTPCON."
+  "Creole render a WIKIPAGE back to the HTTPCON.
+
+Expects WIKIPAGE to be a file path."
   (let* ((commit (elnode-http-param httpcon "rev"))
+         (raw-p (elnode-http-param httpcon "raw"))
+         (page-redirect (elwiki/page-redirect wikipage))
          (page-buffer (when commit (elwiki/get-revision wikipage commit))))
     (if (and commit
              (not page-buffer))
         ;; A specific page revision was requested, but we failed to get it.
         (elnode-send-404 httpcon "No such page revision.")
-      (progn
-        (elnode-http-start httpcon 200 '("Content-type" . "text/html"))
-        (elwiki/render-page
-         httpcon
-         (or page-buffer wikipage)
-         pageinfo
-         :post (pp-esxml-to-xml
-                `(div ((class . "actions"))
-                      ,(esxml-link "?action=edit" "Edit this page")
-                      ,(esxml-link "?action=history" "View page history"))))))
+      (if page-redirect
+          (elnode-send-redirect httpcon page-redirect)
+        (if raw-p
+            (progn
+              (elnode-http-start
+               httpcon 200 '("content-type" . "text/plain; charset=utf-8"))
+              (elnode-http-return
+               httpcon (elwiki/get-page wikipage t)))
+          ;; Else send the HTML
+          (elnode-http-start
+           httpcon 200 `("content-type" . "text/html; charset=utf-8"))
+          (elwiki/render-page
+           httpcon
+           (or page-buffer wikipage)
+           pageinfo
+           :post (pp-esxml-to-xml
+                  `(div ((class . "actions"))
+                        ,(esxml-link "?action=edit" "Edit this page")
+                        ,(esxml-link "?action=history" "View page history")))))))
     (when page-buffer
       (kill-buffer page-buffer))))
 
 (defun elwiki-edit-page (httpcon wikipage &optional pageinfo preview)
   "Return an editor for WIKIPAGE via HTTPCON."
-  (elnode-http-start httpcon 200 '("Content-type" . "text/html"))
+  (elnode-http-start httpcon 200 '("Content-type" . "text/html; charset=utf-8"))
   (let* ((pageinfo (or pageinfo (elnode-http-pathinfo httpcon)))
          (page-name (elwiki/page-name pageinfo))
          (comment (elnode-http-param httpcon "comment"))
@@ -178,32 +251,32 @@ verbatim."
              ((action . ,(format "%s?action=edit" pageinfo))
               (method . "POST"))
              (fieldset ()
-                       (legend () ,(format "Edit %s" (file-name-nondirectory pageinfo)))
-                       (textarea ((cols . "80")
-                                  (rows . "20")
-                                  (name . "wikitext"))
-                                 ,(if (file-exists-p wikipage)
-                                      (with-temp-buffer
-                                        (insert-file-contents wikipage)
-                                        (buffer-string))
-                                    ""))
-                       (br ())
-                       (label () "Edit comment:"
-                              (input ((type . "text")
-                                      (name . "comment")
-                                      (value . ,(or comment "")))))
-                       (br ())
-                       (label () "Username:"
-                              (input ((type . "text")
-                                      (name . "username")
-                                      (value . ,(or username "")))))
-                       (br ())
-                       (input ((type . "submit")
-                               (name . "save")
-                               (value . "save")))
-                       (input ((type . "submit")
-                               (name . "preview")
-                               (value . "preview"))))))))
+               (legend () ,(format "Edit %s" (file-name-nondirectory pageinfo)))
+               (textarea ((cols . "80")
+                          (rows . "20")
+                          (name . "wikitext"))
+                 ,(if (file-exists-p wikipage)
+                      (with-temp-buffer
+                        (insert-file-contents wikipage)
+                        (buffer-string))
+                    ""))
+               (br ())
+               (label () "Edit comment:"
+                 (input ((type . "text")
+                         (name . "comment")
+                         (value . ,(or comment "")))))
+               (br ())
+               (label () "Username:"
+                 (input ((type . "text")
+                         (name . "username")
+                         (value . ,(or username "")))))
+               (br ())
+               (input ((type . "submit")
+                       (name . "save")
+                       (value . "save")))
+               (input ((type . "submit")
+                       (name . "preview")
+                       (value . "preview"))))))))
     (if preview
         (elwiki/render-page
          httpcon
@@ -214,12 +287,12 @@ verbatim."
        httpcon
        (esxml-to-xml
         `(html ()
-               ,(esxml-head (format "%s: editing %s" elwiki-wiki-name page-name)
-                  (link 'stylesheet
-                        "text/css"
-                        elwiki-global-stylesheet))
-               (body ()
-                     ,editor)))))))
+           ,(esxml-head (format "%s: editing %s" elwiki-wiki-name page-name)
+                        (link 'stylesheet
+                              "text/css"
+                              elwiki-global-stylesheet))
+           (body ()
+             ,editor)))))))
 
 (defun elwiki-history-page (httpcon wikipage)
   (elnode-error "Generating history page for %s" wikipage)
@@ -234,18 +307,20 @@ verbatim."
 
 (defun elwiki/save-request (httpcon wikiroot path text)
   "Process a page-save request."
-  (let* ((page-name (save-match-data
-                      (string-match "/wiki/\\(.*\\)$" path)
-                      (match-string 1 path)))
+  (let* ((page-name (elnode-http-mapping httpcon 1))
          (comment (elnode-http-param httpcon "comment"))
          (username (elnode-http-param httpcon "username"))
-         (file-name (expand-file-name (concat (file-name-as-directory wikiroot)
-                                              path ".creole")))
+         ;; It would be better to use elnode-docroot-for with handling
+         ;; for new files
+         (file-name (expand-file-name
+                     (concat
+                      (file-name-as-directory wikiroot) page-name)))
          (buffer (find-file-noselect file-name)))
     (elnode-error "Saving page %s, edited by %s" page-name username)
     (with-current-buffer buffer
       (erase-buffer)
-      (insert text)
+      ;; We need to choose the coding system properly from the http header
+      (insert (decode-coding-string text 'utf-8))
       (save-buffer)
       (elwiki/commit-page file-name username comment)
       (elnode-send-redirect httpcon path))))
@@ -258,16 +333,10 @@ verbatim."
       (esxml-to-xml "The page you requested does not exist.
 You can <a href=\"?action=edit\">create it</a> if you wish."))))
 
-(defun elwiki/router (httpcon)
-  "Dispatch to a handler depending on the URL.
-
-So, for example, a handler for wiki pages, a separate handler for
-images, and so on."
-  (let ((webserver (elnode-webserver-handler-maker
-                    (concat elwiki-dir "/static/"))))
-    (elnode-hostpath-dispatcher httpcon
-     `(("^[^/]*//wiki/\\(.*\\)" . elwiki/handler)
-       ("^[^/]*//static/\\(.*\\)$" . ,webserver)))))
+(defvar elwiki/wiki-files
+(setq elwiki/wiki-files
+  (directory-files elwiki-wikiroot nil "^[A-Z][a-z]+[A-Z][a-z]+"))
+  "The list of wiki files")
 
 (defun elwiki/handler (httpcon)
   "A low level handler for wiki operations.
@@ -280,42 +349,59 @@ include the extension.
 Update operations are NOT protected by authentication.  Soft
 security is used."
   (let ((targetfile (elnode-http-mapping httpcon 1))
-        (action (intern (or (elnode-http-param httpcon "action")
-                            "none"))))
-   (flet ((elnode-http-mapping (httpcon which)
+        (action (intern
+                 (or (elnode-http-param httpcon "action")
+                     "none"))))
+    (when (eq action 'random)
+      (elnode-send-redirect
+       httpcon (elt elwiki/wiki-files (random (length elwiki/wiki-files)))))
+    (flet ((elnode-http-mapping (httpcon which)
             (concat targetfile ".creole"))
-          (elnode-not-found (httpcon target-file)
-            (elwiki/page-not-found httpcon target-file action)))
-     (elnode-method httpcon
-       (GET
-        (elnode-docroot-for (concat elwiki-wikiroot "/wiki/")
-          with target-path
-          on httpcon
-          do
-          (case action
-            (none
-             (elwiki-page httpcon target-path))
-            (edit
-             (elwiki-edit-page httpcon target-path))
-            (history
-             (elwiki-history-page httpcon target-path)))))
-       (POST
-        (let ((path (elnode-http-pathinfo httpcon))
+           (elnode-not-found (httpcon target-file)
+             (elwiki/page-not-found httpcon target-file action)))
+      (elnode-method httpcon
+        (GET
+         (let ((targetfile (elnode-http-mapping httpcon 1)))
+           (elnode-docroot-for (concat elwiki-wikiroot "/wiki/")
+               with target-path
+               on httpcon
+               do
+               (case action
+                 (none
+                  (elwiki-page httpcon target-path targetfile))
+                 (edit
+                  (elwiki-edit-page httpcon target-path))
+                 (history
+                  (elwiki-history-page httpcon target-path))))))
+        (POST
+         (let ((path (elnode-http-pathinfo httpcon))
                (text (elwiki/text-param httpcon)))
-          (cond
-           ;; A save request in which case save the new text and then
-           ;; send the wiki text.
-           ((and (elnode-http-param httpcon "save")
-                 (eq action 'edit))
-            (elwiki/save-request httpcon elwiki-wikiroot path text))
-           ;; A preview request in which case send back the WIKI text
-           ;; that's been sent.
-           ((and (elnode-http-param httpcon "preview")
-                 (eq action 'edit))
-            (let ((preview-file-name "/tmp/preview"))
-              (with-temp-file preview-file-name
-                (insert text))
-              (elwiki-edit-page httpcon preview-file-name path t))))))))))
+           (cond
+             ;; A save request in which case save the new text and then
+             ;; send the wiki text.
+             ((and (elnode-http-param httpcon "save")
+                   (eq action 'edit))
+              (elwiki/save-request httpcon elwiki-wikiroot path text))
+             ;; A preview request in which case send back the WIKI text
+             ;; that's been sent.
+             ((and (elnode-http-param httpcon "preview")
+                   (eq action 'edit))
+              (let ((preview-file-name "/tmp/preview"))
+                (with-temp-file preview-file-name
+                  (insert text))
+                (elwiki-edit-page httpcon preview-file-name path t))))))))))
+
+(defun elwiki/router (httpcon)
+  "Dispatch to a handler depending on the URL.
+
+So, for example, a handler for wiki pages, a separate handler for
+images, and so on."
+  (let ((webserver
+         (elnode-webserver-handler-maker
+          (concat (file-name-as-directory elwiki-wikiroot) "static/"))))
+    (elnode-hostpath-dispatcher httpcon
+     `(("^[^/]*//wiki/\\(.*\\)" . elwiki/handler)
+       ("^[^/]*//static/\\(.*\\)$" . ,webserver)))))
 
 ;;;###autoload
 (defun elwiki-server (httpcon)
