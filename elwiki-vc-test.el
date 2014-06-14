@@ -33,6 +33,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'elwiki-vc)
 
 (ert-deftest elwiki/log->alist ()
   "Test `elwiki/log->alist'."
