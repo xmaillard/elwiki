@@ -120,20 +120,17 @@ OUT-STREAM is where to send the log output, see
 
 (defun* elwiki/commit-log (file number-of-commits skip-commits
                           &optional (out-stream t))
-  "Get the last NUMBER-OF-COMMITS commits of FILE.
+  "Render the last NUMBER-OF-COMMITS commits of FILE to OUT-STREAM.
 
-Skips the first SKIP-COMMITS commits.
+Skips the first SKIP-COMMITS commits.  Any HTML in the fields is
+escaped.
 
-Any HTML in the fields is escaped.
-
-Sends a list of commits as alists of the form
+Sends to OUT-STREAM a list of commits as alists of the form
 
   ((hash . \"xxxxxxx\")
    (date . \"yyyy-dd-mm hh:mm:ss +TZ\")
    (author . \"John Smith\")
    (subject . \"commit subject line\"))
-
-to OUT-STREAM.
 
 OUT-STREAM is an optional destination for the commit-logs, this can
 be a buffer or a function or `nil' or `t'.  If a function it is
@@ -164,6 +161,10 @@ Returns the git process."
     git-log-process))
 
 (defun elwiki/http-commit-log (httpcon wikipage)
+  "Render the commit log for WIKIPAGE to HTTPCON.
+
+Simply calls `elwiki/commit-log' on WIKIPAGE with HTTPCON as
+OUT-STREAM."
   (let* ((page (string-to-int (or (elnode-http-param httpcon "page") "")))
          (number-of-commits (string-to-int
                              (or (elnode-http-param httpcon "commits")
