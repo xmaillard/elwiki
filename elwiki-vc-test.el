@@ -36,7 +36,10 @@
 (require 'elwiki-vc)
 
 (ert-deftest elwiki/log->alist ()
-  "Test `elwiki/log->alist'."
+  "Test `elwiki/log->alist'.
+
+Tests with a valid commit-log string, one with too few fields,
+and one with too many fields."
   (should (equal
            '((hash . "xxxxxxx")
              (date . "YYYY-MM-DD HH:MM:SS +TZ")
