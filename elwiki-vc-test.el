@@ -50,4 +50,23 @@ and one with too many fields."
   (should-error (elwiki/log->alist "foo\0bar\0"))
   (should-error (elwiki/log->alist "foo\0bar\0goo\0foo\0")))
 
+(ert-deftest elwiki/log-alist->esxml ()
+  "Test `elwiki/log-alist->esxml'.
+
+Tests with a valid commit-log alist."
+  (should (equal
+           '(li nil
+              (span ((class . "hash"))
+                (a ((href . "?rev=xxxxxxx")) "xxxxxxx"))
+              (span ((class . "date"))
+                "YYYY-MM-DD HH:MM:SS +TZ")
+              (span ((class . "author"))
+                "John Smith")
+              (span ((class . "subject"))
+                "commit subject"))
+           (elwiki/log-alist->esxml '((hash . "xxxxxxx")
+                                      (date . "YYYY-MM-DD HH:MM:SS +TZ")
+                                      (author . "John Smith")
+                                      (subject . "commit subject"))))))
+
 ;;; elwiki-vc-test.el ends here
