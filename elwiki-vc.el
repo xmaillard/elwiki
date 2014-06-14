@@ -171,12 +171,12 @@ Returns the git process."
          (skip-commits (* page number-of-commits)))
     (process-put
      httpcon :elnode-child-process
+     ;; Send each entry from git-log and then end the HTTP connection.
      (elwiki/commit-log
       wikipage number-of-commits skip-commits
       (lambda (data)
         (if (eq data :eof)
             (elnode-http-return httpcon)
-          ;; Else send the data
           (elnode-http-send-string httpcon data)))))))
 
 (defun elwiki/commit-page (file username comment)
