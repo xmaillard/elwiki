@@ -122,8 +122,8 @@ OUT-STREAM is where to send the log output, see
                           &optional (out-stream t))
   "Render the last NUMBER-OF-COMMITS commits of FILE to OUT-STREAM.
 
-Skips the first SKIP-COMMITS commits.  Any HTML in the fields is
-escaped.
+Renders the last NUMBER-OF-COMMITS as HTML, skipping the first
+SKIP-COMMITS commits.  Any HTML in the fields is escaped.
 
 Sends to OUT-STREAM a list of commits as alists of the form
 
