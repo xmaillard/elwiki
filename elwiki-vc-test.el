@@ -69,4 +69,37 @@ Tests with a valid commit-log alist."
                                       (author . "John Smith")
                                       (subject . "commit subject"))))))
 
+(ert-deftest elwiki/commit-log ()
+  "Test `elwiki/commit-log'.
+
+Does not do a rigorous check on each field, just a sanity check."
+  (let* ((temp-buffer (generate-new-buffer "*elwiki/commit-log test tmp*"))
+         (git-proc (elwiki/commit-log "wiki/example.creole" 5 0
+                     (lambda (x)
+                       (unless (eq x :eof)
+                         (with-current-buffer temp-buffer
+                           (insert x)))))))
+    ;; Wait for the git process to exit.
+    (while (not (eq (process-status git-proc) 'exit))
+      (sleep-for 1))
+    ;; Check the `elwiki/commit-log' output.
+    (should (string-match
+             (rx "<html><body><ul>"
+                 (repeat 5
+                   (and "<li><span class=\"hash\"><a href=\"?rev="
+                        (= 7 hex-digit) "\">"
+                        (= 7 hex-digit)
+                        "</a></span><span class=\"date\">"
+                        (= 4 digit) ?- (= 2 digit) ?- (= 2 digit) " "
+                        (= 2 digit) ?: (= 2 digit) ?: (= 2 digit)
+                        " +" (= 4 digit)
+                        "</span><span class=\"author\">"
+                        (1+ printing)
+                        "</span><span class=\"subject\">"
+                        (1+ printing)
+                        "</span></li>"))
+                 "</ul></body></html>")
+             (with-current-buffer temp-buffer
+               (buffer-string))))))
+
 ;;; elwiki-vc-test.el ends here
