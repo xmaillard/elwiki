@@ -145,7 +145,7 @@ Returns the git process."
         (git-log-process
          (start-process
           "git-log" (generate-new-buffer-name "*git-log*")
-          "git" "log"
+          "git" "--no-pager" "log"
           (format "--skip=%d" skip-commits)
           (format "-%d" number-of-commits)
           "--pretty=tformat:%h%x00%ci%x00%an%x00%s" file)))
@@ -170,9 +170,8 @@ OUT-STREAM."
                              (or (elnode-http-param httpcon "commits")
                                  "10"))) ; Default to 10.
          (skip-commits (* page number-of-commits)))
-    (process-put
-     httpcon :elnode-child-process
-     ;; Send each entry from git-log and then end the HTTP connection.
+    ;; Send each entry from git-log and then end the HTTP connection.
+    (elnode/con-put httpcon :elnode-child-process
      (elwiki/commit-log
       wikipage number-of-commits skip-commits
       (lambda (data)
